@@ -1,0 +1,1898 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduAI - Nền Tảng Tóm Tắt AI & Đối Chiếu Nguồn Chính Thống Môn Đại Cương</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Collapsible Mindmap Tree Styling */
+        .mm-branch {
+            position: relative;
+            padding-left: 1.35rem;
+            border-left: 2px solid #cbd5e1;
+            margin-left: 0.7rem;
+        }
+        .mm-item {
+            position: relative;
+        }
+        .mm-item::before {
+            content: '';
+            position: absolute;
+            left: -1.35rem;
+            top: 1.15rem;
+            width: 1.15rem;
+            height: 2px;
+            background-color: #cbd5e1;
+        }
+
+        /* Clean Print / PDF Export Styles */
+        @media print {
+            body * { visibility: hidden; }
+            #printable-area, #printable-area * { visibility: visible; }
+            #printable-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white !important;
+                color: black !important;
+                padding: 20px;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-indigo-100 selection:text-indigo-950">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Top Navigation Bar -->
+    <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-2xs no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-wrap items-center justify-between py-3 gap-3">
+                <!-- Brand Identity: EduAI -->
+                <div class="flex items-center gap-3 cursor-pointer" onclick="goHome()">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white font-extrabold text-sm shadow-md shadow-indigo-200">
+                        <i data-lucide="brain-circuit" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-extrabold text-lg sm:text-xl tracking-tight text-slate-900">Edu<span class="text-indigo-600">AI</span></span>
+                            <span class="px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800 rounded-full">Chuẩn Nguồn Học Thuật</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 font-medium hidden sm:block">Tóm tắt AI 5 Trang • Mindmap Thu Gọn • Đối Chiếu Giáo Trình Chuẩn</p>
+                    </div>
+                </div>
+
+                <!-- Fast Onboarding Selector (Year 1-2 & University Input) -->
+                <div class="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-xl border border-slate-200 text-xs">
+                    <div class="flex items-center gap-1 px-2 py-1 bg-white rounded-lg border border-slate-200/70">
+                        <i data-lucide="graduation-cap" class="w-3.5 h-3.5 text-indigo-600"></i>
+                        <select id="year-select" onchange="updateProfile()" class="bg-transparent font-bold text-slate-800 focus:outline-none cursor-pointer">
+                            <option value="Năm 1">Sinh viên Năm 1</option>
+                            <option value="Năm 2">Sinh viên Năm 2</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-1.5 px-2.5 py-1 bg-white rounded-lg border border-slate-200/70">
+                        <i data-lucide="building-2" class="w-3.5 h-3.5 text-emerald-600"></i>
+                        <input id="school-input" type="text" value="UTH - ĐH Giao thông vận tải TP.HCM" onchange="updateProfile()" placeholder="Nhập mã/tên trường..." class="bg-transparent font-bold text-slate-800 w-44 sm:w-56 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Global Quick Search & 24h Cram Mode -->
+                <div class="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
+                    <div class="relative flex-1 md:w-64">
+                        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                        <input id="global-search" type="text" oninput="handleSearch(this.value)" placeholder="Tìm môn, công thức, chương..." class="w-full pl-9 pr-3 py-2 text-xs bg-slate-100 border border-slate-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition-all">
+                        <div id="search-results" class="hidden absolute left-0 right-0 mt-1.5 bg-white rounded-xl shadow-xl border border-slate-200 max-h-80 overflow-y-auto z-50 divide-y divide-slate-100"></div>
+                    </div>
+
+                    <button onclick="toggleGlobalCramView()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100 shadow-2xs whitespace-nowrap">
+                        <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-600"></i>
+                        <span>Ôn cấp tốc 24h</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- VIEW 1: DASHBOARD & 8 GENERAL SUBJECTS -->
+        <div id="dashboard-view" class="space-y-8">
+            <!-- Hero Banner -->
+            <div class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-10 text-white shadow-xl relative overflow-hidden">
+                <div class="relative z-10 max-w-3xl space-y-4">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 text-xs font-semibold">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+                        <span>Chuẩn đề cương: <span id="hero-school-badge" class="text-white font-bold underline decoration-emerald-400">UTH - ĐH Giao thông vận tải TP.HCM</span> (<span id="hero-year-badge">Năm 1</span>)</span>
+                    </div>
+                    <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
+                        EduAI — Cô đọng 100 trang giáo trình thành <span class="text-indigo-400">5 trang trọng tâm</span> chuẩn xác.
+                    </h1>
+                    <p class="text-sm sm:text-base text-slate-300 leading-relaxed">
+                        Hệ thống hóa kiến thức 8 môn đại cương đối chiếu trực tiếp từ <strong>Giáo trình chuẩn Bộ GD&ĐT</strong>, <strong>Luật Minh Khuê</strong>, <strong>Thư viện Pháp luật</strong>, <strong>Studocu Vietnam</strong>, <strong>MIT OpenCourseWare</strong>, <strong>Khan Academy</strong> và ngân hàng trắc nghiệm miễn phí.
+                    </p>
+                    <div class="pt-2 flex flex-wrap gap-3">
+                        <button onclick="openSubject('ktvm1')" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-bold rounded-xl shadow-lg transition-all flex items-center gap-2">
+                            <i data-lucide="book-open" class="w-4 h-4"></i>
+                            <span>Vào học ngay</span>
+                        </button>
+                        <button onclick="toggleGlobalCramView()" class="px-5 py-2.5 bg-white/10 hover:bg-white/15 text-white border border-white/20 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center gap-2">
+                            <i data-lucide="flame" class="w-4 h-4 text-amber-400"></i>
+                            <span>Bảng công thức & Mẹo thi 24h</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="absolute -right-16 -bottom-16 w-72 h-72 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute right-24 top-8 w-40 h-40 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+            </div>
+
+            <!-- 3 Core Features Strip -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex items-start gap-4">
+                    <div class="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                        <i data-lucide="file-text" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-sm">1. Tóm Tắt AI 5 Trang & Xuất PDF</h3>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">Cô đọng trọng tâm kèm ví dụ thực tế ngành Logistics/Vận tải, chế độ Ôn cấp tốc 24h và nút tải PDF học offline.</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex items-start gap-4">
+                    <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                        <i data-lucide="network" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-sm">2. Mindmap Thu Gọn & Xuất Ảnh PNG</h3>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">Sơ đồ tư duy đóng/mở từng nhánh dễ nhìn trên điện thoại, xem giải thích từng nút và tải ảnh PNG về máy.</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex items-start gap-4">
+                    <div class="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                        <i data-lucide="library" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-sm">3. Nguồn Chính Thống & Mini-Quiz</h3>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">Đối chiếu minh bạch Luật Minh Khuê, Studocu, Giáo trình Bộ GD&ĐT kèm bộ 5 câu trắc nghiệm giải thích chi tiết.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8 Standardized Subjects Grid -->
+            <div>
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
+                    <div>
+                        <h2 class="text-xl font-extrabold text-slate-900">Kho 8 Môn Đại Cương Chuẩn Hóa</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Chọn môn học để mở tóm tắt 5 trang, sơ đồ Mindmap, luyện đề trắc nghiệm và Gia sư AI</p>
+                    </div>
+                    <span class="px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-xs rounded-lg w-fit">
+                        ✓ Đối chiếu 100% Giáo trình & Văn bản chính thống
+                    </span>
+                </div>
+
+                <div id="subjects-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: GLOBAL CRAM MODE 24H -->
+        <div id="cram-view" class="hidden space-y-6">
+            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="flex items-start gap-3.5">
+                    <div class="w-11 h-11 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                        <i data-lucide="zap" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 class="text-lg font-extrabold text-slate-900">Chế Độ Ôn Thi Cấp Tốc 24h (Toàn Bộ 8 Môn)</h2>
+                            <span class="px-2 py-0.5 text-[11px] font-bold bg-amber-200/80 text-amber-950 rounded-md">Chuẩn <span class="school-name-text">UTH</span></span>
+                        </div>
+                        <p class="text-xs text-slate-600 mt-1">Gom toàn bộ công thức sống còn, mốc lịch sử bắt buộc nhớ và các bẫy trắc nghiệm thường gặp của cả 8 môn trên 1 trang duy nhất.</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <button onclick="window.print()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all">
+                        <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                        <span>In / Lưu PDF</span>
+                    </button>
+                    <button onclick="goHome()" class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold rounded-xl transition-all">
+                        Quay lại Trang chủ
+                    </button>
+                </div>
+            </div>
+
+            <div id="cram-cards-container" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <!-- Populated via JS -->
+            </div>
+        </div>
+
+        <!-- VIEW 3: LESSON DEEP WORKSPACE -->
+        <div id="workspace-view" class="hidden space-y-5">
+            <!-- Top Workspace Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs no-print">
+                <div class="flex items-center gap-2.5">
+                    <button onclick="goHome()" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center gap-1.5 text-xs font-bold">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        <span>Danh sách môn</span>
+                    </button>
+                    <div class="h-5 w-px bg-slate-200"></div>
+                    <div class="flex items-center gap-2">
+                        <span id="ws-subject-code" class="text-[11px] font-mono font-bold px-2 py-0.5 bg-indigo-100 text-indigo-800 rounded">ECO101</span>
+                        <h2 id="ws-subject-title" class="font-extrabold text-slate-900 text-base sm:text-lg">Kinh tế Vi mô</h2>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
+                        <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i>
+                        <span>Chuẩn đề cương <span class="school-name-text">UTH</span></span>
+                    </span>
+                    <button onclick="exportLessonPDF()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                        <span>Xuất PDF / In bài</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3-Column Responsive Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+                <!-- Left Sidebar: Chapters & Official Sources (3 cols) -->
+                <div class="lg:col-span-3 bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs space-y-4 no-print">
+                    <div>
+                        <div class="flex items-center justify-between mb-2.5">
+                            <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Mục lục Bài học</h3>
+                            <span id="ws-lesson-count" class="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">2 bài</span>
+                        </div>
+                        <div id="ws-lesson-list" class="space-y-2"></div>
+                    </div>
+
+                    <div class="pt-3 border-t border-slate-100 space-y-2">
+                        <p class="text-[11px] font-extrabold text-slate-500 uppercase">Nguồn học thuật đối chiếu:</p>
+                        <div id="ws-source-badge" class="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs text-slate-700 font-medium leading-relaxed"></div>
+                    </div>
+                </div>
+
+                <!-- Center Panel: 3-Tab Content Viewer (5 cols) -->
+                <div id="printable-area" class="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
+                    <!-- Lesson Header -->
+                    <div class="p-5 border-b border-slate-100 bg-slate-50/70">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                            <span id="lesson-tag" class="text-[11px] font-bold text-indigo-600 uppercase tracking-wide">Chương 1</span>
+                            <span id="lesson-source-pill" class="text-[11px] font-semibold text-slate-600 bg-white px-2.5 py-0.5 rounded-md border border-slate-200">Nguồn chuẩn</span>
+                        </div>
+                        <h3 id="lesson-title" class="text-lg sm:text-xl font-extrabold text-slate-900 leading-snug">Tiêu đề bài học</h3>
+                    </div>
+
+                    <!-- 3 Tabs Bar -->
+                    <div class="grid grid-cols-3 border-b border-slate-200 bg-white text-xs font-bold no-print">
+                        <button onclick="switchTab('summary')" id="tab-btn-summary" class="py-3 px-2 text-center border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50/40 flex items-center justify-center gap-1.5 transition-all">
+                            <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                            <span>Tóm tắt AI</span>
+                        </button>
+                        <button onclick="switchTab('mindmap')" id="tab-btn-mindmap" class="py-3 px-2 text-center border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center justify-center gap-1.5 transition-all">
+                            <i data-lucide="git-fork" class="w-3.5 h-3.5"></i>
+                            <span>Mindmap</span>
+                        </button>
+                        <button onclick="switchTab('sources-quiz')" id="tab-btn-sources-quiz" class="py-3 px-2 text-center border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center justify-center gap-1.5 transition-all">
+                            <i data-lucide="book-check" class="w-3.5 h-3.5"></i>
+                            <span>Nguồn & Quiz</span>
+                        </button>
+                    </div>
+
+                    <!-- TAB 1: AI SUMMARY + LESSON 24H CRAM TOGGLE -->
+                    <div id="tab-content-summary" class="p-5 space-y-4 text-sm text-slate-700 leading-relaxed">
+                        <div class="flex items-center justify-between bg-slate-100 p-1.5 rounded-xl border border-slate-200 no-print">
+                            <button id="mode-full-btn" onclick="setLessonSummaryMode('full')" class="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold bg-white text-indigo-700 shadow-2xs transition-all">
+                                📖 Tóm tắt chuẩn 5 trang
+                            </button>
+                            <button id="mode-cram-btn" onclick="setLessonSummaryMode('cram')" class="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all">
+                                ⚡ Ôn cấp tốc 24h (1 trang)
+                            </button>
+                        </div>
+                        <div id="summary-body-container" class="space-y-4"></div>
+                    </div>
+
+                    <!-- TAB 2: INTERACTIVE COLLAPSIBLE MINDMAP + PNG EXPORT -->
+                    <div id="tab-content-mindmap" class="hidden p-5 space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200 no-print">
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="expandAllMindmap(true)" class="px-2.5 py-1.5 bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 rounded-lg text-xs font-bold flex items-center gap-1">
+                                    <i data-lucide="chevrons-down-up" class="w-3.5 h-3.5"></i>
+                                    <span>Mở hết</span>
+                                </button>
+                                <button onclick="expandAllMindmap(false)" class="px-2.5 py-1.5 bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 rounded-lg text-xs font-bold flex items-center gap-1">
+                                    <i data-lucide="chevrons-up-down" class="w-3.5 h-3.5"></i>
+                                    <span>Thu gọn</span>
+                                </button>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="zoomMindmap(-0.1)" class="p-1.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700" title="Thu nhỏ">
+                                    <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i>
+                                </button>
+                                <span id="mindmap-zoom-label" class="text-xs font-bold text-slate-600 w-10 text-center">100%</span>
+                                <button onclick="zoomMindmap(0.1)" class="p-1.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700" title="Phóng to">
+                                    <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
+                                </button>
+                                <button onclick="downloadMindmapPNG()" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-2xs">
+                                    <i data-lucide="image-down" class="w-3.5 h-3.5"></i>
+                                    <span>Tải ảnh PNG</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Interactive Tree Area -->
+                        <div class="overflow-x-auto border border-slate-200 rounded-2xl p-4 bg-slate-50/40 min-h-[300px]">
+                            <div id="mindmap-canvas" class="transition-transform origin-top-left" style="transform: scale(1);"></div>
+                        </div>
+
+                        <!-- Selected Node Detail Box -->
+                        <div id="mindmap-node-detail" class="p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-200/80 text-xs text-indigo-950">
+                            <span class="font-extrabold block mb-0.5 text-indigo-700">📌 Chi tiết nhánh đang chọn:</span>
+                            <span id="mindmap-node-detail-text">Bấm vào bất kỳ nhánh nào trên sơ đồ để đóng/mở nhánh con và xem ghi chú giải thích nhanh.</span>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: OFFICIAL SOURCES & 5-QUESTION MINI-QUIZ -->
+                    <div id="tab-content-sources-quiz" class="hidden p-5 space-y-5">
+                        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-600 text-white text-[11px] font-bold uppercase tracking-wider">
+                                    <i data-lucide="library" class="w-3.5 h-3.5"></i>
+                                    <span>Nguồn Chính Thống Đối Chiếu</span>
+                                </span>
+                                <span class="text-[11px] font-bold text-emerald-700">Chuẩn Giáo trình & Luật</span>
+                            </div>
+                            <div id="official-sources-list" class="space-y-2 text-xs text-slate-700"></div>
+                            <div class="pt-2.5 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-2">
+                                <span class="text-[11px] text-slate-500">Phát hiện lỗi công thức hoặc cần cập nhật đề cương mới?</span>
+                                <button onclick="openReportModal()" class="px-3 py-1.5 bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-colors">
+                                    <i data-lucide="flag" class="w-3.5 h-3.5"></i>
+                                    <span>Báo lỗi / Đề xuất cập nhật</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Mini-Quiz 5 Questions -->
+                        <div class="flex items-center justify-between bg-indigo-50 border border-indigo-100 p-3.5 rounded-xl">
+                            <div>
+                                <h4 class="font-bold text-indigo-950 text-sm">Mini-Quiz Ôn Tập (5 Câu Trắc Nghiệm)</h4>
+                                <p class="text-xs text-indigo-700 mt-0.5">Tổng hợp từ ngân hàng đề thi thử trắc nghiệm online miễn phí</p>
+                            </div>
+                            <span id="quiz-score-badge" class="px-3 py-1 bg-white text-indigo-700 font-extrabold text-xs rounded-lg border border-indigo-200">
+                                Chưa nộp bài
+                            </span>
+                        </div>
+
+                        <div id="quiz-questions-list" class="space-y-4"></div>
+
+                        <div class="pt-2 flex items-center gap-3">
+                            <button onclick="submitQuiz()" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors">
+                                Nộp bài & Xem giải thích chi tiết
+                            </button>
+                            <button onclick="resetQuiz()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors">
+                                Làm lại
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Live AI Tutor Chat (Gemini / Claude / Grok Personas) (4 cols) -->
+                <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200 shadow-2xs flex flex-col h-[640px] sticky top-20 no-print">
+                    <div class="p-4 border-b border-slate-200 bg-gradient-to-r from-indigo-600 to-slate-900 text-white rounded-t-2xl flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+                                <i data-lucide="sparkles" class="w-5 h-5 text-amber-300"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-sm leading-tight">Trợ Lý Gia Sư EduAI</h3>
+                                <p class="text-[11px] text-indigo-200 flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
+                                    <span>Hỏi đáp trực tiếp theo bài</span>
+                                </p>
+                            </div>
+                        </div>
+                        <select id="ai-engine-select" class="bg-white/15 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg border border-white/25 focus:outline-none cursor-pointer">
+                            <option value="Gemini 2.5" class="text-slate-900">Gemini 2.5</option>
+                            <option value="Claude 3.7 Sonnet" class="text-slate-900">Claude 3.7 Sonnet</option>
+                            <option value="Grok 3" class="text-slate-900">Grok 3</option>
+                        </select>
+                    </div>
+
+                    <!-- Quick Prompt Chips -->
+                    <div class="px-3.5 py-2.5 bg-slate-50 border-b border-slate-200/80 flex gap-1.5 overflow-x-auto">
+                        <button onclick="sendQuickPrompt('Cho ví dụ thực tế ngành Logistics và Vận tải minh họa cho kiến thức cốt lõi của bài này')" class="px-2.5 py-1 bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-colors">
+                            🚚 Ví dụ ngành Logistics/Vận tải
+                        </button>
+                        <button onclick="sendQuickPrompt('Giải thích thật dễ hiểu trong 30 giây kèm mẹo nhớ nhanh khi đi thi')" class="px-2.5 py-1 bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-colors">
+                            ⏱️ Giải thích trong 30s
+                        </button>
+                        <button onclick="sendQuickPrompt('Liệt kê các bẫy hay gặp nhất trong đề thi của bài này')" class="px-2.5 py-1 bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-colors">
+                            ⚠️ Các bẫy đề thi
+                        </button>
+                        <button onclick="sendQuickPrompt('Tạo 3 câu hỏi ôn tập nhanh kèm đáp án và giải thích')" class="px-2.5 py-1 bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-colors">
+                            🎯 3 câu hỏi nhanh
+                        </button>
+                    </div>
+
+                    <!-- Chat Feed -->
+                    <div id="ai-chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3.5 text-xs leading-relaxed bg-slate-50/30">
+                        <div class="flex items-start gap-2.5">
+                            <div class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 font-extrabold text-[10px]">AI</div>
+                            <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-none p-3 text-slate-700 shadow-2xs space-y-1">
+                                <div class="text-[10px] font-bold text-indigo-600 uppercase">Gia sư EduAI</div>
+                                <p>Chào bạn! Mình đã đồng bộ nội dung bài học hiện tại và đề cương trường bạn. Hãy đặt câu hỏi bất kỳ về công thức, khái niệm hoặc yêu cầu ví dụ thực tế nhé!</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Input Form -->
+                    <form onsubmit="handleChatSubmit(event)" class="p-3 border-t border-slate-200 bg-white rounded-b-2xl flex items-center gap-2">
+                        <input id="ai-chat-input" type="text" placeholder="Hỏi EduAI về bài học đang xem..." class="flex-1 px-3.5 py-2.5 text-xs bg-slate-100 border border-slate-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:outline-none">
+                        <button type="submit" class="p-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-colors shrink-0" title="Gửi câu hỏi">
+                            <i data-lucide="send" class="w-4 h-4"></i>
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-8 border-t border-slate-200 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-4 no-print">
+        <div class="flex items-center gap-2 font-bold text-slate-700">
+            <span class="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-[10px] font-extrabold">AI</span>
+            <span>EduAI — Nền Tảng Tóm Tắt AI & Đối Chiếu Nguồn Chính Thống Môn Đại Cương</span>
+        </div>
+        <p>Dành cho Sinh viên Năm 1 & Năm 2 • Đối chiếu Giáo trình Bộ GD&ĐT, Luật Minh Khuê, Studocu & MIT OCW</p>
+    </footer>
+
+    <!-- Report Formula Error / Update Proposal Modal -->
+    <div id="report-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2 text-indigo-600">
+                    <i data-lucide="flag" class="w-5 h-5"></i>
+                    <h3 class="font-extrabold text-base text-slate-900">Báo lỗi công thức / Đề xuất cập nhật</h3>
+                </div>
+                <button onclick="closeReportModal()" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-600">Góp ý của bạn giúp EduAI đối chiếu thêm giáo trình mới và hoàn thiện độ chuẩn xác cho cộng đồng sinh viên.</p>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Loại đề xuất:</label>
+                    <select id="report-type" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-indigo-500">
+                        <option>Báo lỗi ký hiệu / công thức toán - lý</option>
+                        <option>Cập nhật điều luật / văn bản quy phạm mới</option>
+                        <option>Bổ sung nguồn giáo trình / đề cương trường</option>
+                        <option>Đề xuất thêm câu hỏi trắc nghiệm ôn tập</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nội dung chi tiết & Nguồn trích dẫn:</label>
+                    <textarea id="report-desc" rows="3" placeholder="Ví dụ: Cập nhật theo Luật Đường bộ mới nhất (Nguồn: Luật Minh Khuê / Thư viện Pháp luật)..." class="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-indigo-500"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeReportModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl">Hủy</button>
+                <button onclick="submitReport()" class="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl">Gửi đề xuất</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. COMPLETE DATA FOR ALL 8 GENERAL SUBJECTS
+        // ==========================================
+        const subjectsData = [
+            {
+                id: 'ktvm1',
+                code: 'ECO101',
+                title: 'Kinh tế Vi mô',
+                category: 'Kinh tế & Quản trị',
+                color: 'emerald',
+                icon: 'trending-up',
+                sourceShort: 'Giáo trình Mankiw, ĐH Kinh tế Quốc dân (NEU), Studocu Vietnam & Ngân hàng trắc nghiệm',
+                cramFormula: 'Cân bằng: Qd = Qs. | Co giãn cầu theo giá: Ed = (%ΔQd)/(%ΔP) = (dQd/dP)*(P/Qd). | Tối ưu tiêu dùng: MUx/Px = MUy/Py. | Tối đa hóa lợi nhuận: MR = MC.',
+                officialSources: [
+                    { name: 'Giáo trình Nguyên lý Kinh tế học (N. Gregory Mankiw)', url: 'https://www.cengage.com', detail: 'Tài liệu kinh điển toàn cầu về cung - cầu, độ co giãn và cấu trúc thị trường.' },
+                    { name: 'Giáo trình Kinh tế học Vi mô (ĐH Kinh tế Quốc dân - NEU)', url: 'https://neu.edu.vn', detail: 'Giáo trình chuẩn giảng dạy kinh tế học tại các trường đại học Việt Nam.' },
+                    { name: 'Studocu Vietnam - Free Study Notes & Exam Prep', url: 'https://www.studocu.com/vn', detail: 'Kho tổng hợp công thức, bài tập giải chi tiết và đề thi thử trắc nghiệm miễn phí.' }
+                ],
+                lessons: [
+                    {
+                        id: 'ktvm1-1',
+                        title: 'Bài 1: Cung - Cầu Thị Trường & Độ Co Giãn (Elasticity)',
+                        tag: 'Chương 2 • Trọng tâm bài tập tính toán',
+                        source: 'Giáo trình Mankiw • NEU • Studocu Vietnam',
+                        corePoints: [
+                            { title: '1. Phương trình Cung - Cầu & Trạng thái Cân bằng', text: '• Hàm Cầu: Qd = a - bP (b > 0, đường cầu dốc xuống).\n• Hàm Cung: Qs = c + dP (d > 0, đường cung dốc lên).\n• Cân bằng thị trường: Qd = Qs ⇒ tìm được P* và Q*. Khi P > P* xảy ra dư thừa; khi P < P* xảy ra thiếu hụt.' },
+                            { title: '2. Độ co giãn của Cầu theo Giá (Ed) & Tổng doanh thu (TR)', text: '• Công thức: Ed = (dQd / dP) × (P / Qd).\n• Khi |Ed| > 1 (cầu co giãn nhiều): Giảm giá P sẽ làm tăng tổng doanh thu TR.\n• Khi |Ed| < 1 (cầu ít co giãn): Tăng giá P sẽ làm tăng tổng doanh thu TR.' },
+                            { title: '3. Ví dụ thực tế ngành Logistics & Vận tải', text: 'Vận tải hàng hóa container tuyến cố định ít tuyến thay thế có |Ed| < 1 (ít co giãn). Ngược lại, dịch vụ giao hàng chặng cuối (last-mile delivery) có nhiều hãng cạnh tranh nên |Ed| > 1 (co giãn mạnh theo cước phí).' }
+                        ],
+                        formulasAndMilestones: [
+                            'Cân bằng: Qd = Qs | Dư thừa: Qs > Qd | Thiếu hụt: Qd > Qs.',
+                            'Độ co giãn điểm: Ed = (dQd/dP) * (P/Qd) | Co giãn khoảng: Ed = [(Q2-Q1)/((Q2+Q1)/2)] / [(P2-P1)/((P2+P1)/2)].',
+                            'Co giãn chéo Exy > 0: Hàng thay thế | Exy < 0: Hàng bổ sung.'
+                        ],
+                        examTip: 'Phân biệt rõ: Giá chính hàng hóa đó thay đổi gây ra sự TRƯỢT DỌC trên đường cầu; các yếu tố ngoài giá (thu nhập, thị hiếu, giá hàng liên quan) gây ra sự DỊCH CHUYỂN đường cầu.',
+                        mindmap: {
+                            label: 'Cung - Cầu & Độ Co Giãn',
+                            note: 'Cơ chế hình thành giá thị trường và phản ứng của lượng cầu trước biến động giá.',
+                            color: 'emerald',
+                            children: [
+                                {
+                                    label: 'Cân bằng Thị trường',
+                                    note: 'Giao điểm của đường cung và đường cầu xác định giá và sản lượng cân bằng.',
+                                    color: 'indigo',
+                                    children: [
+                                        { label: 'Hàm Cầu: Qd = a - bP', note: 'Thể hiện mối quan hệ nghịch biến giữa giá và lượng cầu.' },
+                                        { label: 'Hàm Cung: Qs = c + dP', note: 'Thể hiện mối quan hệ đồng biến giữa giá và lượng cung.' },
+                                        { label: 'Cân bằng E: Qd = Qs', note: 'Không còn áp lực làm thay đổi giá trên thị trường.' }
+                                    ]
+                                },
+                                {
+                                    label: 'Độ co giãn Cầu theo Giá (Ed)',
+                                    note: 'Đo lường phần trăm thay đổi của lượng cầu khi giá thay đổi 1%.',
+                                    color: 'amber',
+                                    children: [
+                                        { label: '|Ed| > 1: Co giãn nhiều', note: 'Giảm giá P giúp tăng Tổng doanh thu TR.' },
+                                        { label: '|Ed| < 1: Ít co giãn', note: 'Tăng giá P giúp tăng Tổng doanh thu TR.' },
+                                        { label: '|Ed| = 1: Co giãn đơn vị', note: 'Tổng doanh thu TR đạt giá trị cực đại.' }
+                                    ]
+                                }
+                            ]
+                        },
+                        quiz: [
+                            { q: 'Khi độ co giãn của cầu theo giá |Ed| = 2,5, nếu doanh nghiệp giảm giá bán 10% thì lượng cầu và tổng doanh thu thay đổi thế nào?', options: ['Lượng cầu tăng 25%, tổng doanh thu tăng', 'Lượng cầu giảm 25%, tổng doanh thu giảm', 'Lượng cầu tăng 2,5%, tổng doanh thu giảm', 'Lượng cầu tăng 25%, tổng doanh thu giảm'], answer: 0, explain: '|Ed| = 2,5 > 1 (cầu co giãn nhiều). Giá giảm 10% làm lượng cầu tăng 25%, kéo theo tổng doanh thu TR = P×Q tăng.' },
+                            { q: 'Yếu tố nào sau đây gây ra sự trượt dọc trên đường cầu thay vì dịch chuyển đường cầu?', options: ['Thu nhập người tiêu dùng tăng', 'Giá của chính hàng hóa đó thay đổi', 'Giá hàng hóa thay thế giảm', 'Thị hiếu thay đổi'], answer: 1, explain: 'Chỉ giá của chính hàng hóa đó thay đổi mới gây ra vận động dọc đường cầu.' },
+                            { q: 'Nếu hai hàng hóa X và Y là hàng hóa thay thế, độ co giãn chéo Exy sẽ có giá trị:', options: ['Exy < 0', 'Exy > 0', 'Exy = 0', 'Exy = -1'], answer: 1, explain: 'Giá Y tăng làm người tiêu dùng mua nhiều X hơn nên Exy > 0.' },
+                            { q: 'Khi Chính phủ quy định giá trần thấp hơn giá cân bằng thị trường, hiện tượng gì sẽ xảy ra?', options: ['Dư thừa hàng hóa', 'Thiếu hụt hàng hóa', 'Thị trường tự cân bằng', 'Đường cung dịch chuyển'], answer: 1, explain: 'Giá trần thấp hơn giá cân bằng khiến Qd > Qs, gây thiếu hụt hàng hóa.' },
+                            { q: 'Cho Qd = 100 - 2P và Qs = 10 + P. Giá và sản lượng cân bằng là:', options: ['P = 30, Q = 40', 'P = 40, Q = 30', 'P = 20, Q = 60', 'P = 25, Q = 50'], answer: 0, explain: '100 - 2P = 10 + P ⇒ 3P = 90 ⇒ P = 30, Q = 40.' }
+                        ]
+                    },
+                    {
+                        id: 'ktvm1-2',
+                        title: 'Bài 2: Hành Vi Người Tiêu Dùng & Chi Phí Sản Xuất Tối Ưu',
+                        tag: 'Chương 3 & 4 • Trọng tâm lý thuyết & bài tập',
+                        source: 'Giáo trình NEU • Studocu Vietnam',
+                        corePoints: [
+                            { title: '1. Tối đa hóa Hữu dụng của Người tiêu dùng', text: 'Với đường ngân sách I = Px.X + Py.Y, người tiêu dùng tối đa hóa tổng hữu dụng TU khi: MUx / Px = MUy / Py (Hữu dụng biên trên một đồng chi tiêu bằng nhau).' },
+                            { title: '2. Tối đa hóa Lợi nhuận Doanh nghiệp', text: 'Mọi doanh nghiệp đều tối đa hóa lợi nhuận (π = TR - TC) tại mức sản lượng Q thỏa mãn: Doanh thu biên bằng Chi phí biên (MR = MC).' }
+                        ],
+                        formulasAndMilestones: [
+                            'Tối ưu tiêu dùng: MUx / Px = MUy / Py và Px.X + Py.Y = I.',
+                            'Tối đa hóa lợi nhuận chung: MR = MC | Cạnh tranh hoàn hảo: P = MR = MC.',
+                            'Điểm đóng cửa sản xuất ngắn hạn: P < AVC min.'
+                        ],
+                        examTip: 'Đường chi phí biên (MC) luôn đi qua điểm cực tiểu của đường chi phí biến đổi trung bình (AVC) và tổng chi phí trung bình (ATC).',
+                        mindmap: {
+                            label: 'Tối Ưu Tiêu Dùng & Sản Xuất',
+                            note: 'Nguyên tắc phân bổ ngân sách của người tiêu dùng và quyết định sản lượng của doanh nghiệp.',
+                            color: 'emerald',
+                            children: [
+                                {
+                                    label: 'Người tiêu dùng tối ưu',
+                                    note: 'Tối đa hóa hữu dụng trong giới hạn ngân sách.',
+                                    color: 'indigo',
+                                    children: [
+                                        { label: 'Đường ngân sách: I = Px.X + Py.Y', note: 'Tập hợp các giỏ hàng hóa chi tiêu hết thu nhập I.' },
+                                        { label: 'Điều kiện tối ưu: MUx/Px = MUy/Py', note: 'Tỷ lệ thay thế biên MRS = Px/Py.' }
+                                    ]
+                                },
+                                {
+                                    label: 'Doanh nghiệp tối đa lợi nhuận',
+                                    note: 'Quyết định mức sản lượng Q để lợi nhuận cao nhất.',
+                                    color: 'amber',
+                                    children: [
+                                        { label: 'Nguyên tắc chung: MR = MC', note: 'Doanh thu tăng thêm bằng chi phí tăng thêm.' },
+                                        { label: 'Đóng cửa ngắn hạn: P < AVC min', note: 'Doanh thu không đủ bù chi phí biến đổi.' }
+                                    ]
+                                }
+                            ]
+                        },
+                        quiz: [
+                            { q: 'Điều kiện để người tiêu dùng tối đa hóa hữu dụng với mức thu nhập nhất định khi mua X và Y là:', options: ['MUx = MUy', 'Px = Py', 'MUx / Px = MUy / Py', 'TUx = TUy'], answer: 2, explain: 'Hữu dụng biên trên mỗi đơn vị tiền tệ chi cho các hàng hóa phải bằng nhau: MUx/Px = MUy/Py.' },
+                            { q: 'Trong ngắn hạn, đường chi phí biên (MC) cắt đường AVC và ATC tại điểm nào?', options: ['Điểm cực đại', 'Điểm cực tiểu', 'Điểm hòa vốn', 'Điểm gốc tọa độ'], answer: 1, explain: 'Đường MC luôn cắt đường AVC và ATC tại điểm cực tiểu của mỗi đường.' },
+                            { q: 'Doanh nghiệp cạnh tranh hoàn hảo đóng cửa sản xuất trong ngắn hạn khi giá bán P giảm xuống dưới:', options: ['ATC min', 'AVC min', 'AFC', 'MC'], answer: 1, explain: 'Khi P < AVC min, doanh nghiệp đóng cửa để giới hạn khoản lỗ bằng chi phí cố định FC.' },
+                            { q: 'Lợi nhuận kinh tế bằng 0 (lợi nhuận thông thường) xảy ra khi:', options: ['TR = TC (tính cả chi phí cơ hội)', 'TR = VC', 'P = AVC', 'MR = 0'], answer: 0, explain: 'Lợi nhuận kinh tế = Tổng doanh thu - Tổng chi phí kinh tế (bao gồm cả chi phí ẩn/cơ hội).' },
+                            { q: 'Trong thị trường độc quyền hoàn toàn, đường doanh thu biên (MR) nằm ở đâu so với đường cầu (D)?', options: ['Nằm phía trên đường cầu', 'Trùng với đường cầu', 'Nằm phía dưới đường cầu và có độ dốc gấp đôi', 'Song song với trục hoành'], answer: 2, explain: 'Với hàm cầu tuyến tính P = a - bQ, doanh thu biên là MR = a - 2bQ nằm dưới đường cầu và dốc gấp đôi.' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'ktvm2',
+                code: 'ECO102',
+                title: 'Kinh tế Vĩ mô',
+                category: 'Kinh tế & Chính sách',
+                color: 'sky',
+                icon: 'globe',
+                sourceShort: 'Giáo trình Mankiw, ĐH Kinh tế Quốc dân (NEU), Studocu Vietnam & Ngân hàng trắc nghiệm',
+                cramFormula: 'GDP = C + I + G + (X - M). | Số nhân chi tiêu: k = 1 / (1 - MPC). | Lạm phát: π = [(CPI_t - CPI_t-1)/CPI_t-1]*100%. | Thất nghiệp: u = (U/L)*100%.',
+                officialSources: [
+                    { name: 'Giáo trình Kinh tế học Vĩ mô (ĐH Kinh tế Quốc dân - NEU)', url: 'https://neu.edu.vn', detail: 'Hệ thống đo lường GDP, lạm phát và chính sách tài khóa - tiền tệ.' },
+                    { name: 'Principles of Macroeconomics (N. Gregory Mankiw)', url: 'https://www.cengage.com', detail: 'Tài liệu chuẩn quốc tế về kinh tế học vĩ mô.' },
+                    { name: 'Studocu Vietnam - Free Study Notes & Exam Prep', url: 'https://www.studocu.com/vn', detail: 'Tổng hợp công thức vĩ mô và ngân hàng câu hỏi trắc nghiệm miễn phí.' }
+                ],
+                lessons: [
+                    {
+                        id: 'ktvm2-1',
+                        title: 'Bài 1: Đo Lường Sản Lượng Quốc Gia (GDP) & Chính Sách Kinh Tế',
+                        tag: 'Chương 2 & 4 • Trọng tâm công thức vĩ mô',
+                        source: 'Giáo trình NEU • Mankiw • Studocu Vietnam',
+                        corePoints: [
+                            { title: '1. Tổng sản phẩm quốc nội (GDP)', text: 'Là giá trị thị trường của tất cả hàng hóa và dịch vụ CUỐI CÙNG được sản xuất ra trong phạm vi lãnh thổ quốc gia trong một thời kỳ. Theo phương pháp chi tiêu: GDP = C + I + G + (X - M).' },
+                            { title: '2. Chính sách Tài khóa & Chính sách Tiền tệ', text: '• Chính sách Tài khóa (Chính phủ điều hành): Sử dụng Chi tiêu chính phủ (G) và Thuế (T). Khi suy thoái: Tăng G, giảm T.\n• Chính sách Tiền tệ (Ngân hàng Trung ương điều hành): Sử dụng Tỷ lệ dự trữ bắt buộc, Lãi suất chiết khấu và Nghiệp vụ thị trường mở (OMO). Khi suy thoái: Mua trái phiếu chính phủ để bơm tiền.' }
+                        ],
+                        formulasAndMilestones: [
+                            'GDP = C + I + G + NX (NX = Xuất khẩu X - Nhập khẩu M).',
+                            'Số nhân chi tiêu đơn giản: k = 1 / (1 - MPC).',
+                            'Không tính vào GDP: Hàng hóa trung gian, tài sản cũ bán lại, giao dịch chuyển nhượng.'
+                        ],
+                        examTip: 'Bẫy đề thi: Chính phủ quản lý Chính sách Tài khóa (G, T); Ngân hàng Trung ương (NHNN) quản lý Chính sách Tiền tệ (Cung tiền, lãi suất).',
+                        mindmap: {
+                            label: 'Kinh Tế Vĩ Mô & Chính Sách',
+                            note: 'Đo lường tổng sản lượng quốc gia và các công cụ điều tiết chu kỳ kinh tế.',
+                            color: 'sky',
+                            children: [
+                                {
+                                    label: 'Đo lường GDP',
+                                    note: 'Thước đo quy mô và tốc độ tăng trưởng kinh tế.',
+                                    color: 'indigo',
+                                    children: [
+                                        { label: 'Chi tiêu: GDP = C + I + G + (X - M)', note: 'Tổng chi tiêu của hộ gia đình, doanh nghiệp, chính phủ và khu vực nước ngoài.' },
+                                        { label: 'GDP thực vs GDP danh nghĩa', note: 'GDP thực tính theo giá năm gốc, loại bỏ yếu tố lạm phát.' }
+                                    ]
+                                },
+                                {
+                                    label: '2 Chính sách Điều tiết',
+                                    note: 'Công cụ ổn định kinh tế vĩ mô khi suy thoái hoặc lạm phát cao.',
+                                    color: 'amber',
+                                    children: [
+                                        { label: 'Tài khóa (Chính phủ): G & T', note: 'Mở rộng khi suy thoái: Tăng chi tiêu G, giảm thuế T.' },
+                                        { label: 'Tiền tệ (NHTW): Cung tiền MS', note: 'Mở rộng khi suy thoái: Mua trái phiếu trên thị trường mở.' }
+                                    ]
+                                }
+                            ]
+                        },
+                        quiz: [
+                            { q: 'Khoản mục nào sau đây KHÔNG được tính vào GDP của Việt Nam năm 2026?', options: ['Xe tải mới sản xuất trong nước năm 2026', 'Dịch vụ vận tải cảng biển năm 2026', 'Căn nhà cũ xây năm 2018 được bán lại năm 2026', 'Chi tiêu y tế công năm 2026'], answer: 2, explain: 'Giao dịch bán lại tài sản cũ không tạo ra sản lượng hàng hóa, dịch vụ mới trong kỳ.' },
+                            { q: 'Nếu xu hướng tiêu dùng biên MPC = 0,8, số nhân chi tiêu đơn giản k bằng bao nhiêu?', options: ['1,25', '5', '4', '0,8'], answer: 1, explain: 'k = 1 / (1 - 0,8) = 5.' },
+                            { q: 'Để thực hiện chính sách tiền tệ mở rộng, Ngân hàng Trung ương sẽ làm gì?', options: ['Tăng tỷ lệ dự trữ bắt buộc', 'Tăng lãi suất chiết khấu', 'Mua trái phiếu chính phủ trên thị trường mở', 'Bán trái phiếu chính phủ'], answer: 2, explain: 'Mua trái phiếu chính phủ bơm tiền ra lưu thông, làm tăng cung tiền và giảm lãi suất.' },
+                            { q: 'Chỉ số điều chỉnh GDP (GDP Deflator) được tính bằng công thức nào?', options: ['(GDP danh nghĩa / GDP thực) × 100', '(GDP thực / GDP danh nghĩa) × 100', 'GDP danh nghĩa - GDP thực', 'CPI năm nay - CPI năm gốc'], answer: 0, explain: 'GDP Deflator = (GDP danh nghĩa / GDP thực) × 100.' },
+                            { q: 'Khi nền kinh tế đang có lạm phát quá cao, Chính phủ nên áp dụng chính sách tài khóa nào?', options: ['Tăng chi tiêu chính phủ G và giảm thuế T', 'Giảm chi tiêu chính phủ G và tăng thuế T', 'In thêm tiền bù đắp ngân sách', 'Giảm lãi suất cho vay'], answer: 1, explain: 'Chính sách tài khóa thắt chặt (giảm G, tăng T) làm giảm tổng cầu AD, giúp hạ nhiệt lạm phát.' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'pldc',
+                code: 'LAW101',
+                title: 'Pháp luật đại cương',
+                category: 'Khoa học Xã hội & Pháp lý',
+                color: 'indigo',
+                icon: 'scale',
+                sourceShort: 'Luật Minh Khuê, Thư viện Pháp luật, Hiến pháp 2013 & Bộ GD&ĐT',
+                cramFormula: '4 yếu tố cấu thành Vi phạm PL: (1) Hành vi trái PL + (2) Có lỗi (Cố ý/Vô ý) + (3) Năng lực trách nhiệm pháp lý + (4) Xâm hại quan hệ xã hội được PL bảo vệ. | Thứ bậc VBQPPL: Hiến pháp -> Bộ luật/Luật -> Nghị định (Chính phủ) -> Thông tư (Bộ).',
+                officialSources: [
+                    { name: 'Luật Minh Khuê | Tư vấn pháp luật, Luật sư (luatminhkhue.vn)', url: 'https://luatminhkhue.vn', detail: 'Hệ thống phân tích lý luận nhà nước, pháp luật và bình luận khoa học pháp lý chuẩn.' },
+                    { name: 'Thư viện Pháp luật (thuvienphapluat.vn)', url: 'https://thuvienphapluat.vn', detail: 'Tra cứu văn bản gốc Hiến pháp 2013, Bộ luật Dân sự 2015 & Luật Ban hành VBQPPL.' },
+                    { name: 'Giáo trình Pháp luật đại cương (Bộ Giáo dục & Đào tạo)', url: 'https://moet.gov.vn', detail: 'NXB Đại học Quốc gia • Đối chiếu chuẩn đề cương đại học.' }
+                ],
+                lessons: [
+                    {
+                        id: 'pldc-1',
+                        title: 'Bài 1: Bản Chất Pháp Luật & Thứ Bậc Văn Bản Quy Phạm Pháp Luật',
+                        tag: 'Chương 1 • Trọng tâm thi trắc nghiệm',
+                        source: 'Luật Minh Khuê • Thư viện Pháp luật',
+                        corePoints: [
+                            { title: '1. Ba thuộc tính cơ bản của Pháp luật', text: '• Tính quy phạm phổ biến: Là khuôn mẫu chung áp dụng nhiều lần cho mọi cá nhân, tổ chức.\n• Tính xác định chặt chẽ về mặt hình thức: Được thể hiện bằng văn bản với ngôn ngữ pháp lý rõ ràng, chính xác.\n• Tính được đảm bảo thực hiện bằng cưỡng chế nhà nước: Nhà nước sử dụng bộ máy quyền lực để buộc các chủ thể tuân thủ.' },
+                            { title: '2. Thứ bậc hiệu lực Văn bản Quy phạm Pháp luật (Từ cao xuống thấp)', text: 'Hiến pháp (Quốc hội - hiệu lực cao nhất) → Bộ luật, Luật, Nghị quyết của Quốc hội → Pháp lệnh, Nghị quyết của UBTVQH → Lệnh, Quyết định của Chủ tịch nước → Nghị định của Chính phủ → Quyết định của Thủ tướng Chính phủ → Thông tư của Bộ trưởng.' },
+                            { title: '3. Ví dụ thực tế ngành Vận tải & Logistics', text: 'Doanh nghiệp vận tải đường bộ phải tuân thủ Luật Đường bộ (do Quốc hội ban hành) và các quy định chi tiết về phù hiệu, thiết bị giám sát hành trình tại Nghị định của Chính phủ.' }
+                        ],
+                        formulasAndMilestones: [
+                            'Thứ bậc cao nhất: Hiến pháp 2013 (Chỉ Quốc hội có quyền lập hiến, lập pháp).',
+                            'Chính phủ ban hành Nghị định | Thủ tướng ban hành Quyết định | Bộ trưởng ban hành Thông tư.',
+                            'Bẫy đề thi: Văn bản cấp dưới tuyệt đối không được trái với văn bản cấp trên.'
+                        ],
+                        examTip: 'Bẫy đề thi: Ủy ban Thường vụ Quốc hội ban hành Pháp lệnh (không phải Luật). Chính phủ ban hành Nghị định (không ban hành Thông tư).',
+                        mindmap: {
+                            label: 'Nhà nước & Hệ thống Pháp luật',
+                            note: 'Khung lý luận nền tảng về nguồn gốc nhà nước, thuộc tính pháp luật và thứ bậc văn bản quy phạm pháp luật Việt Nam.',
+                            color: 'indigo',
+                            children: [
+                                {
+                                    label: '3 Thuộc tính Pháp luật',
+                                    note: 'Phân biệt pháp luật với đạo đức, tập quán và quy tắc tôn giáo.',
+                                    color: 'emerald',
+                                    children: [
+                                        { label: 'Tính quy phạm phổ biến', note: 'Áp dụng bắt buộc chung cho mọi đối tượng trong phạm vi cả nước.' },
+                                        { label: 'Tính xác định chặt chẽ về hình thức', note: 'Phải ban hành đúng thẩm quyền, tên gọi và trình tự luật định.' },
+                                        { label: 'Tính cưỡng chế nhà nước', note: 'Được bảo đảm bằng các biện pháp chế tài nhà nước.' }
+                                    ]
+                                },
+                                {
+                                    label: 'Thứ bậc Văn bản QPPL',
+                                    note: 'Xác định văn bản nào được ưu tiên áp dụng khi có quy định khác nhau.',
+                                    color: 'amber',
+                                    children: [
+                                        { label: 'Cấp 1: Hiến pháp (Quốc hội)', note: 'Đạo luật cơ bản, hiệu lực pháp lý cao nhất.' },
+                                        { label: 'Cấp 2: Bộ luật / Luật (Quốc hội)', note: 'Cụ thể hóa Hiến pháp trên từng lĩnh vực.' },
+                                        { label: 'Cấp 3: Nghị định (Chính phủ)', note: 'Quy định chi tiết thi hành Luật.' },
+                                        { label: 'Cấp 4: Thông tư (Bộ trưởng)', note: 'Hướng dẫn thực hiện trong phạm vi ngành, lĩnh vực.' }
+                                    ]
+                                }
+                            ]
+                        },
+                        quiz: [
+                            { q: 'Văn bản quy phạm pháp luật nào có hiệu lực pháp lý cao nhất trong hệ thống pháp luật Việt Nam?', options: ['Bộ luật Dân sự 2015', 'Hiến pháp 2013', 'Nghị định của Chính phủ', 'Pháp lệnh của UBTVQH'], answer: 1, explain: 'Theo Hiến pháp 2013 và Luật Ban hành VBQPPL, Hiến pháp là đạo luật cơ bản có hiệu lực pháp lý cao nhất.' },
+                            { q: 'Cơ quan nào có thẩm quyền ban hành Nghị định?', options: ['Quốc hội', 'Chính phủ', 'Chủ tịch nước', 'Tòa án nhân dân tối cao'], answer: 1, explain: 'Chính phủ là cơ quan hành chính nhà nước cao nhất, có thẩm quyền ban hành Nghị định.' },
+                            { q: 'Thuộc tính nào sau đây KHÔNG phải là thuộc tính cơ bản của pháp luật?', options: ['Tính quy phạm phổ biến', 'Tính cưỡng chế nhà nước', 'Tính tự nguyện tuyệt đối', 'Tính xác định chặt chẽ về hình thức'], answer: 2, explain: 'Pháp luật mang tính bắt buộc chung và được bảo đảm bằng cưỡng chế nhà nước, không phải tự nguyện.' },
+                            { q: 'Ủy ban Thường vụ Quốc hội có thẩm quyền ban hành loại văn bản nào?', options: ['Luật và Bộ luật', 'Pháp lệnh và Nghị quyết', 'Nghị định và Quyết định', 'Thông tư'], answer: 1, explain: 'UBTVQH ban hành Pháp lệnh và Nghị quyết theo quy định của Luật Ban hành VBQPPL.' },
+                            { q: 'Trong trường hợp các văn bản quy phạm pháp luật do các cơ quan khác nhau ban hành có quy định khác nhau về cùng một vấn đề thì áp dụng văn bản nào?', options: ['Văn bản ban hành sau', 'Văn bản có hiệu lực pháp lý cao hơn', 'Văn bản của cơ quan chuyên ngành', 'Cả hai văn bản'], answer: 1, explain: 'Nguyên tắc áp dụng pháp luật: Khi có sự khác nhau giữa các văn bản của các cơ quan khác nhau thì áp dụng văn bản có hiệu lực pháp lý cao hơn.' }
+                        ]
+                    },
+                    {
+                        id: 'pldc-2',
+                        title: 'Bài 2: Quy Phạm Pháp Luật & Cấu Thành Vi Phạm Pháp Luật',
+                        tag: 'Chương 2 • Trọng tâm bài tập tình huống',
+                        source: 'Luật Minh Khuê • Bộ luật Dân sự 2015',
+                        corePoints: [
+                            { title: '1. Cấu trúc 3 bộ phận của Quy phạm pháp luật', text: '• Giả định: Nêu lên hoàn cảnh, điều kiện, chủ thể chịu sự tác động (Ai? Khi nào? Ở đâu?).\n• Quy định: Nêu quy tắc xử sự bắt buộc (Được làm gì? Không được làm gì? Phải làm gì?).\n• Chế tài: Nêu biện pháp xử lý bất lợi của Nhà nước khi chủ thể không thực hiện đúng phần Quy định.' },
+                            { title: '2. Bốn dấu hiệu cấu thành Vi phạm pháp luật', text: 'Chỉ coi là vi phạm pháp luật khi hội tụ đủ 4 yếu tố: (1) Hành vi trái pháp luật (hành động hoặc không hành động); (2) Có lỗi của chủ thể (cố ý trực tiếp, cố ý gián tiếp, vô ý vì quá tự tin, vô ý do cẩu thả); (3) Chủ thể có năng lực trách nhiệm pháp lý; (4) Xâm hại quan hệ xã hội được pháp luật bảo vệ.' }
+                        ],
+                        formulasAndMilestones: [
+                            'Công thức VPPL = Hành vi trái PL + Có lỗi + Năng lực TNPL + Xâm hại QHXH.',
+                            'Độ tuổi thành niên theo Bộ luật Dân sự 2015: Từ đủ 18 tuổi trở lên (Điều 20).',
+                            '4 loại Trách nhiệm pháp lý: Hình sự (Tòa án áp dụng), Hành chính, Dân sự, Kỷ luật.'
+                        ],
+                        examTip: 'Nếu thiếu dù chỉ 1 trong 4 dấu hiệu (ví dụ: người mất năng lực hành vi dân sự gây thiệt hại) thì KHÔNG cấu thành vi phạm pháp luật.',
+                        mindmap: {
+                            label: 'Quy phạm & Vi phạm Pháp luật',
+                            note: 'Cấu trúc quy phạm pháp luật và 4 dấu hiệu nhận diện hành vi vi phạm pháp luật.',
+                            color: 'indigo',
+                            children: [
+                                {
+                                    label: 'Cấu trúc Quy phạm PL',
+                                    note: '3 bộ phận hợp thành một quy phạm pháp luật hoàn chỉnh.',
+                                    color: 'emerald',
+                                    children: [
+                                        { label: 'Giả định: Hoàn cảnh, chủ thể', note: 'Trả lời câu hỏi: Ai? Khi nào? Trong điều kiện nào?' },
+                                        { label: 'Quy định: Quy tắc xử sự', note: 'Trả lời câu hỏi: Được làm gì? Phải làm gì? Cấm làm gì?' },
+                                        { label: 'Chế tài: Hậu quả pháp lý', note: 'Trả lời câu hỏi: Gánh chịu biện pháp xử lý gì nếu vi phạm?' }
+                                    ]
+                                },
+                                {
+                                    label: '4 Dấu hiệu Vi phạm PL',
+                                    note: 'Thiếu 1 trong 4 dấu hiệu sẽ không bị coi là vi phạm pháp luật.',
+                                    color: 'amber',
+                                    children: [
+                                        { label: '1. Hành vi trái pháp luật', note: 'Phải thể hiện ra bên ngoài bằng hành động hoặc không hành động.' },
+                                        { label: '2. Có lỗi (Cố ý / Vô ý)', note: 'Thái độ tâm lý tiêu cực của chủ thể đối với hành vi và hậu quả.' },
+                                        { label: '3. Năng lực trách nhiệm pháp lý', note: 'Đạt độ tuổi luật định và có khả năng nhận thức, điều khiển hành vi.' },
+                                        { label: '4. Xâm hại QHXH được PL bảo vệ', note: 'Gây thiệt hại hoặc đe dọa gây thiệt hại cho xã hội.' }
+                                    ]
+                                }
+                            ]
+                        },
+                        quiz: [
+                            { q: 'Bộ phận nào của quy phạm pháp luật nêu lên biện pháp tác động của Nhà nước đối với chủ thể vi phạm?', options: ['Giả định', 'Quy định', 'Chế tài', 'Quy tắc'], answer: 2, explain: 'Chế tài nêu lên biện pháp xử lý bất lợi mà Nhà nước áp dụng đối với chủ thể vi phạm.' },
+                            { q: 'Người mắc bệnh tâm thần làm mất khả năng nhận thức thực hiện hành vi gây thiệt hại thì có bị coi là vi phạm pháp luật không?', options: ['Có, vì gây thiệt hại thực tế', 'Không, vì thiếu năng lực trách nhiệm pháp lý', 'Có, nếu thiệt hại lớn', 'Tùy quyết định công an'], answer: 1, explain: 'Người mất khả năng nhận thức thiếu năng lực trách nhiệm pháp lý nên hành vi không cấu thành vi phạm pháp luật.' },
+                            { q: 'Theo Điều 20 Bộ luật Dân sự 2015, người thành niên là người từ đủ bao nhiêu tuổi trở lên?', options: ['Đủ 16 tuổi', 'Đủ 18 tuổi', 'Đủ 20 tuổi', 'Đủ 21 tuổi'], answer: 1, explain: 'Bộ luật Dân sự 2015 quy định người thành niên là người từ đủ 18 tuổi trở lên.' },
+                            { q: 'Cơ quan nào có thẩm quyền áp dụng trách nhiệm hình sự?', options: ['Chủ tịch UBND', 'Công an điều tra', 'Tòa án nhân dân', 'Viện Kiểm sát'], answer: 2, explain: 'Chỉ Tòa án nhân dân mới có thẩm quyền xét xử và áp dụng trách nhiệm hình sự.' },
+                            { q: 'Lỗi của người nhận thấy trước hậu quả nguy hại nhưng tin rằng hậu quả đó sẽ không xảy ra hoặc ngăn ngừa được là lỗi gì?', options: ['Cố ý trực tiếp', 'Cố ý gián tiếp', 'Vô ý vì quá tự tin', 'Vô ý do cẩu thả'], answer: 2, explain: 'Đây là dấu hiệu đặc trưng của lỗi vô ý vì quá tự tin.' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'triet',
+                code: 'PHI101',
+                title: 'Triết học Mác - Lênin',
+                category: 'Lý luận Chính trị',
+                color: 'rose',
+                icon: 'compass',
+                sourceShort: 'NXB Chính trị Quốc gia Sự thật, Giáo trình Bộ GD&ĐT (2021) & Studocu Vietnam',
+                cramFormula: 'Vấn đề cơ bản của Triết học: Vật chất & Ý thức. | 2 Nguyên lý: Mối liên hệ phổ biến & Sự phát triển. | 3 Quy luật: Lượng - Chất (Cách thức), Mâu thuẫn (Nguồn gốc/Động lực), Phủ định của phủ định (Khuynh hướng).',
+                officialSources: [
+                    { name: 'Giáo trình Triết học Mác - Lênin (Bộ Giáo dục & Đào tạo - 2021)', url: 'https://moet.gov.vn', detail: 'NXB Chính trị Quốc gia Sự thật • Giáo trình chuẩn bắt buộc bậc Đại học.' },
+                    { name: 'Cổng thông tin điện tử Đảng Cộng sản Việt Nam (dangcongsan.vn)', url: 'https://dangcongsan.vn', detail: 'Chuyên mục Tư liệu - Lý luận Mác - Lênin & Tư tưởng Hồ Chí Minh.' },
+                    { name: 'Studocu Vietnam - Free Study Notes & Exam Prep', url: 'https://www.studocu.com/vn', detail: 'Hệ thống sơ đồ hóa 2 nguyên lý, 3 quy luật và bộ đề trắc nghiệm miễn phí.' }
+                ],
+                lessons: [
+                    {
+                        id: 'triet-1',
+                        title: 'Bài 1: Vật Chất & Ý Thức — 2 Nguyên Lý & 3 Quy Luật Phép Biện Chứng',
+                        tag: 'Chương 2 • Trọng tâm đề thi cuối kỳ',
+                        source: 'NXB Chính trị Quốc gia Sự thật • Giáo trình Bộ GD&ĐT (2021)',
+                        corePoints: [
+                            { title: '1. Vật chất quyết định Ý thức & Tính độc lập tương đối của Ý thức', text: 'Vật chất có trước, quyết định nguồn gốc, nội dung và bản chất của ý thức. Ý thức tác động trở lại vật chất thông qua hoạt động thực tiễn. Ý nghĩa phương pháp luận: Phải tôn trọng tính khách quan, xuất phát từ thực tế khách quan.' },
+                            { title: '2. Hai nguyên lý của Phép biện chứng duy vật', text: '• Nguyên lý về mối liên hệ phổ biến → Rút ra Quan điểm toàn diện & lịch sử - cụ thể.\n• Nguyên lý về sự phát triển → Rút ra Quan điểm phát triển (xem xét sự vật trong khuynh hướng đi lên).' },
+                            { title: '3. Ba quy luật cơ bản (Từ khóa bắt buộc nhớ khi thi)', text: '• Quy luật Lượng - Chất: Chỉ ra CÁCH THỨC của sự phát triển (Tích lũy lượng tại Điểm nút tạo Bước nhảy đổi chất).\n• Quy luật Mâu thuẫn: Chỉ ra NGUỒN GỐC, ĐỘNG LỰC của sự phát triển.\n• Quy luật Phủ định của phủ định: Chỉ ra KHUYNH HƯỚNG phát triển (theo đường xoáy ốc đi lên).' }
+                        ],
+                        formulasAndMilestones: [
+                            'Nguồn gốc, động lực = Quy luật Mâu thuẫn (Hạt nhân của phép biện chứng).',
+                            'Cách thức phát triển = Quy luật Lượng - Chất (Độ → Điểm nút → Bước nhảy).',
+                            'Khuynh hướng phát triển = Quy luật Phủ định của phủ định (Đường xoáy ốc).'
+                        ],
+                        examTip: 'Ví dụ thực tế cho sinh viên: Tích lũy đủ số tín chỉ (Lượng) qua các học kỳ (Độ), đến kỳ bảo vệ đồ án tốt nghiệp (Điểm nút) sẽ thực hiện Bước nhảy từ Sinh viên trở thành Kỹ sư/Cử nhân (Chất mới).',
+                        mindmap: {
+                            label: 'Phép Biện Chứng Duy Vật',
+                            note: 'Hệ thống các nguyên lý và quy luật phổ biến nhất của tự nhiên, xã hội và tư duy.',
+                            color: 'rose',
+                            children: [
+                                {
+                                    label: 'Vật chất & Ý thức',
+                                    note: 'Giải quyết mặt thứ nhất vấn đề cơ bản của triết học.',
+                                    color: 'indigo',
+                                    children: [
+                                        { label: 'Vật chất quyết định Ý thức', note: 'Quyết định nguồn gốc, nội dung, bản chất và sự biến đổi.' },
+                                        { label: 'Ý thức tác động lại qua Thực tiễn', note: 'Thông qua hoạt động thực tiễn của con người.' }
+                                    ]
+                                },
+                                {
+                                    label: '2 Nguyên lý Cơ bản',
+                                    note: 'Nền tảng của phương pháp luận biện chứng duy vật.',
+                                    color: 'emerald',
+                                    children: [
+                                        { label: 'Mối liên hệ phổ biến', note: 'Rút ra quan điểm toàn diện và lịch sử - cụ thể.' },
+                                        { label: 'Sự phát triển', note: 'Rút ra quan điểm phát triển, chống bảo thủ trì trệ.' }
+                                    ]
+                                },
+                                {
+                                    label: '3 Quy luật Cơ bản',
+                                    note: 'Phản ánh cách thức, động lực và khuynh hướng phát triển.',
+                                    color: 'amber',
+                                    children: [
+                                        { label: 'Lượng - Chất (CÁCH THỨC)', note: 'Tích lũy lượng tại điểm nút dẫn đến bước nhảy về chất.' },
+                                        { label: 'Mâu thuẫn (NGUỒN GỐC, ĐỘNG LỰC)', note: 'Sự thống nhất và đấu tranh giữa các mặt đối lập.' },
+                                        { label: 'Phủ định của phủ định (KHUYNH HƯỚNG)', note: 'Phát triển theo đường xoáy ốc tiến lên.' }
+                                    ]
+                                }
+                            ]
+                        },
+                        quiz: [
+                            { q: 'Quy luật nào vạch ra NGUỒN GỐC và ĐỘNG LỰC bên trong của sự vận động, phát triển?', options: ['Quy luật Lượng - Chất', 'Quy luật Mâu thuẫn (Thống nhất và đấu tranh của các mặt đối lập)', 'Quy luật Phủ định của phủ định', 'Quy luật Quan hệ sản xuất'], answer: 1, explain: 'Quy luật Mâu thuẫn là hạt nhân của phép biện chứng, chỉ ra nguồn gốc và động lực của sự phát triển.' },
+                            { q: 'Từ nguyên lý về mối liên hệ phổ biến, ta rút ra nguyên tắc phương pháp luận nào?', options: ['Quan điểm toàn diện và lịch sử - cụ thể', 'Quan điểm chủ quan duy ý chí', 'Quan điểm phiến diện', 'Quan điểm chiết trung'], answer: 0, explain: 'Mọi sự vật tồn tại trong mối liên hệ phổ biến nên phải có quan điểm toàn diện và lịch sử - cụ thể.' },
+                            { q: 'Theo định nghĩa của V.I. Lênin, thuộc tính cơ bản nhất của vật chất là gì?', options: ['Tồn tại khách quan độc lập với ý thức', 'Có khối lượng', 'Nhìn thấy bằng mắt thường', 'Tồn tại vĩnh viễn'], answer: 0, explain: 'Thực tại khách quan tồn tại độc lập với ý thức là thuộc tính chung nhất của vật chất.' },
+                            { q: 'Giới hạn mà ở đó sự thay đổi về lượng chưa làm thay đổi căn bản về chất của sự vật được gọi là:', options: ['Điểm nút', 'Bước nhảy', 'Độ', 'Chất mới'], answer: 2, explain: 'Độ là khoảng giới hạn mà sự thay đổi về lượng chưa dẫn tới thay đổi căn bản về chất.' },
+                            { q: 'Tiêu chuẩn duy nhất để kiểm tra chân lý theo Triết học Mác - Lênin là gì?', options: ['Lý luận khoa học', 'Thực tiễn', 'Số đông thừa nhận', 'Tư duy logic'], answer: 1, explain: 'Thực tiễn là tiêu chuẩn duy nhất để kiểm tra chân lý.' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'lsd',
+                code: 'HIS101',
+                title: 'Lịch sử Đảng CSVN',
+                category: 'Lý luận Chính trị',
+                color: 'amber',
+                icon: 'landmark',
+                sourceShort: 'NXB Chính trị Quốc gia Sự thật, Giáo trình Bộ GD&ĐT (2021) & dangcongsan.vn',
+                cramFormula: '03/02/1930: Thành lập Đảng & Cương lĩnh chính trị đầu tiên. | 02/09/1945: Khai sinh nước VNDCCH. | 07/05/1954: Chiến thắng Điện Biên Phủ. | 30/04/1975: Giải phóng miền Nam. | Đại hội VI (12/1986): Khởi xướng Đổi mới toàn diện.',
+                officialSources: [
+                    { name: 'Giáo trình Lịch sử Đảng Cộng sản Việt Nam (Bộ GD&ĐT - 2021)', url: 'https://moet.gov.vn', detail: 'NXB Chính trị Quốc gia Sự thật • Tài liệu giảng dạy chính thức.' },
+                    { name: 'Cổng thông tin điện tử Đảng Cộng sản Việt Nam (dangcongsan.vn)', url: 'https://dangcongsan.vn', detail: 'Hệ thống Văn kiện Đảng toàn tập qua các kỳ Đại hội đại biểu toàn quốc.' },
+                    { name: 'Studocu Vietnam & Ngân hàng thi thử trắc nghiệm online miễn phí', url: 'https://www.studocu.com/vn', detail: 'Bảng tổng hợp mốc thời gian và bộ câu hỏi trắc nghiệm ôn thi.' }
+                ],
+                lessons: [
+                    {
+                        id: 'lsd-1',
+                        title: 'Bài 1: Sự Ra Đời Của Đảng & Cương Lĩnh Chính Trị Đầu Tiên (1930)',
+                        tag: 'Chương 1 • Mốc lịch sử trọng tâm',
+                        source: 'NXB Chính trị Quốc gia Sự thật • dangcongsan.vn',
+                        corePoints: [
+                            { title: '1. Ba tổ chức cộng sản ra đời năm 1929', text: 'Đông Dương Cộng sản Đảng (6/1929), An Nam Cộng sản Đảng (8/1929), Đông Dương Cộng sản Liên đoàn (9/1929). Yêu cầu cấp thiết đặt ra là hợp nhất thành một chính đảng duy nhất.' },
+                            { title: '2. Cương lĩnh chính trị đầu tiên của Đảng (2/1930)', text: 'Do lãnh tụ Nguyễn Ái Quốc soạn thảo, thông qua tại Hội nghị hợp nhất (Cửu Long, Hương Cảng). Xác định phương hướng: Làm tư sản dân quyền cách mạng và thổ địa cách mạng để đi tới xã hội cộng sản; đặt nhiệm vụ giải phóng dân tộc lên hàng đầu.' }
+                        ],
+                        formulasAndMilestones: [
+                            '03/02/1930: Thành lập Đảng Cộng sản Việt Nam (Nguyễn Ái Quốc chủ trì).',
+                            '10/1930: Hội nghị Trung ương lần 1 thông qua Luận cương chính trị (Trần Phú) và đổi tên thành Đảng Cộng sản Đông Dương.',
+                            '12/1986: Đại hội VI khởi xướng Đổi mới toàn diện, trọng tâm là đổi mới tư duy kinh tế.'
+                        ],
+                        examTip: 'Điểm sáng tạo lớn nhất của Cương lĩnh chính trị đầu tiên (2/1930) so với Luận cương (10/1930) là đặt nhiệm vụ giải phóng dân tộc lên hàng đầu và đoàn kết rộng rãi mọi tầng lớp yêu nước.',
+                        mindmap: {
+                            label: 'Đảng Ra Đời & Cương Lĩnh 1930',
+                            note: 'Bước ngoặt vĩ đại chấm dứt sự khủng hoảng về đường lối cứu nước đầu thế kỷ XX.',
+                            color: 'amber',
+                            children: [
+                                {
+                                    label: '3 Tổ chức Tiền thân (1929)',
+                                    note: 'Sự phát triển mạnh mẽ của phong trào công nhân và yêu nước.',
+                                    color: 'indigo',
+                                    children: [
+                                        { label: 'Đông Dương CS Đảng (6/1929)', note: 'Thành lập tại Bắc Kỳ.' },
+                                        { label: 'An Nam CS Đảng (8/1929)', note: 'Thành lập tại Nam Kỳ.' },
+                                        { label: 'Đông Dương CS Liên đoàn (9/1929)', note: 'Thành lập tại Trung Kỳ.' }
+                                    ]
+                                },
+                                {
+                                    label: 'Cương lĩnh đầu tiên (2/1930)',
+                                    note: 'Gồm Chánh cương vắn tắt và Sách lược vắn tắt.',
+                                    color: 'emerald',
+                                    children: [
+                                        { label: 'Mục tiêu: Độc lập dân tộc & CNXH', note: 'Đặt nhiệm vụ chống đế quốc giành độc lập lên hàng đầu.' },
+                                        { label: 'Lực lượng: Công - Nông nòng cốt', note: 'Đoàn kết tiểu tư sản, trí thức, trung nông và tư sản dân tộc.' }
+                                    ]
+                                }
+                            ]
+                        },
+                        quiz: [
+                            { q: 'Văn kiện nào hợp thành Cương lĩnh chính trị đầu tiên của Đảng (2/1930)?', options: ['Luận cương chính trị 10/1930', 'Chánh cương vắn tắt và Sách lược vắn tắt của Đảng', 'Đường Kách mệnh', 'Tuyên ngôn Độc lập'], answer: 1, explain: 'Chánh cương vắn tắt và Sách lược vắn tắt do Nguyễn Ái Quốc soạn thảo hợp thành Cương lĩnh chính trị đầu tiên.' },
+                            { q: 'Tổ chức cộng sản đầu tiên ra đời ở Việt Nam vào tháng 6/1929 là:', options: ['An Nam Cộng sản Đảng', 'Đông Dương Cộng sản Đảng', 'Đông Dương Cộng sản Liên đoàn', 'Việt Nam Quốc dân Đảng'], answer: 1, explain: 'Đông Dương Cộng sản Đảng thành lập ngày 17/6/1929 tại Hà Nội.' },
+                            { q: 'Hội nghị Trung ương lần thứ nhất (10/1930) đã đổi tên Đảng thành gì?', options: ['Đảng Cộng sản Việt Nam', 'Đảng Lao động Việt Nam', 'Đảng Cộng sản Đông Dương', 'Đảng Dân chủ Việt Nam'], answer: 2, explain: 'Hội nghị tháng 10/1930 đổi tên Đảng thành Đảng Cộng sản Đông Dương.' },
+                            { q: 'Đại hội nào của Đảng đã khởi xướng đường lối Đổi mới toàn diện đất nước?', options: ['Đại hội IV (1976)', 'Đại hội V (1982)', 'Đại hội VI (1986)', 'Đại hội VII (1991)'], answer: 2, explain: 'Đại hội VI (12/1986) khởi xướng công cuộc Đổi mới toàn diện.' },
+                            { q: 'Ba chương trình kinh tế lớn được Đại hội VI (1986) đề ra gồm:', options: ['Công nghiệp nặng, Giao thông, Quốc phòng', 'Lương thực - thực phẩm, Hàng tiêu dùng, Hàng xuất khẩu', 'Nông nghiệp, Du lịch, Viễn thông', 'Giáo dục, Y tế, Khoa học'], answer: 1, explain: 'Ba chương trình kinh tế lớn là Lương thực - thực phẩm, Hàng tiêu dùng và Hàng xuất khẩu.' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'vl1',
+                code: 'PHYS101',
+                title: 'Vật lý 1 (Cơ - Nhiệt)',
+                category: 'Khoa học Tự nhiên & Kỹ thuật',
+                color: 'blue',
+                icon: 'atom',
+                sourceShort: 'Giáo trình Lương Duyên Bình, Halliday & Resnick, MIT OCW & Khan Academy',
+                cramFormula: 'Định luật II Newton: F = m.a. | Động năng: Wđ = 1/2 m.v². | Định lý biến thiên động năng: ΔWđ = ΣA_ngoại_lực. | Mômen lực: M = I.β. | Nguyên lý I Nhiệt động lực học: ΔU = Q + A.',
+                officialSources: [
+                    { name: 'Giáo trình Vật lý Đại cương Tập 1 - Cơ - Nhiệt (Lương Duyên Bình)', url: 'https://nxbgd.vn', detail: 'NXB Giáo dục Việt Nam • Tài liệu chuẩn khối ngành Kỹ thuật & Vận tải.' },
+                    { name: 'Fundamentals of Physics (Halliday & Resnick)', url: 'https://www.wiley.com', detail: 'Giáo trình Vật lý kinh điển quốc tế • Chuẩn hóa công thức cơ học & nhiệt động học.' },
+                    { name: 'MIT OpenCourseWare (8.01 Classical Mechanics) & Khan Academy Physics', url: 'https://ocw.mit.edu', detail: 'Hệ thống bài giảng và bài tập cơ học - nhiệt học chuẩn đại học.' }
+                ],
+                lessons: [
+                    {
+                        id: 'vl1-1',
+                        title: 'Bài 1: Động Lực Học Chất Điểm & Định Lý Biến Thiên Động Năng',
+                        tag: 'Chương 1 & 2 • Cốt lõi kỹ thuật & vận tải',
+                        source: 'Giáo trình Lương Duyên Bình • Halliday & Resnick • MIT OCW',
+                        corePoints: [
+                            { title: '1. Ba Định luật Newton', text: '• Định luật I: Khi hợp lực bằng 0, vật giữ nguyên trạng thái đứng yên hoặc chuyển động thẳng đều.\n• Định luật II: vec(F) = m.vec(a).\n• Định luật III: vec(F)_AB = -vec(F)_BA (lực và phản lực đặt vào hai vật khác nhau).' },
+                            { title: '2. Định lý biến thiên Động năng & Bảo toàn Cơ năng', text: 'Độ biến thiên động năng của vật bằng tổng công của các ngoại lực tác dụng lên vật: Wđ2 - Wđ1 = ΣA_ngoại_lực. Khi chỉ có lực thế (trọng lực, lực đàn hồi) sinh công, cơ năng W = Wđ + Wt được bảo toàn.' },
+                            { title: '3. Ví dụ thực tế ngành Khai thác Vận tải (UTH)', text: 'Tính quãng đường phanh an toàn của đoàn tàu hoặc xe đầu kéo container: Độ giảm động năng (0 - 1/2 m.v₀²) bằng công cản của lực ma sát mặt đường (-μ.m.g.s), suy ra s = v₀² / (2.μ.g).' }
+                        ],
+                        formulasAndMilestones: [
+                            'Định luật II Newton: vec(F)_hl = m.vec(a) | Lực ma sát trượt: F_ms = μ.N.',
+                            'Định lý biến thiên động năng: 1/2 m.v2² - 1/2 m.v1² = A_ngoại_lực.',
+                            'Phương trình động lực học vật rắn quay quanh trục cố định: M = I.β.'
+                        ],
+                        examTip: 'Khi chiếu vec(F) = m.vec(a) trên mặt phẳng nghiêng góc α, phản lực N = m.g.cosα (không phải m.g!).',
+                        mindmap: {
+                            label: 'Cơ Học Chất Điểm (Vật Lý 1)',
+                            note: 'Các định luật Newton, công, năng lượng và ứng dụng tính toán chuyển động phương tiện.',
+                            color: 'blue',
+                            children: [
+                                {
+                                    label: '3 Định luật Newton',
+                                    note: 'Nền tảng của động lực học cổ điển.',
+                                    color: 'indigo',
+                                    children: [
+                                        { label: 'ĐL I: F_hl = 0 → v = const', note: 'Định luật quán tính.' },
+                                        { label: 'ĐL II: vec(F) = m.vec(a)', note: 'Xác định gia tốc dưới tác dụng của hợp lực.' },
+                                        { label: 'ĐL III: vec(F)_12 = -vec(F)_21', note: 'Lực và phản lực đặt lên hai vật khác nhau.' }
+                                    ]
+                                },
+                                {
+                                    label: 'Công & Năng lượng',
+                                    note: 'Giải nhanh các bài toán không cần tính thời gian t.',
+                                    color: 'emerald',
+                                    children: [
+                                        { label: 'Động năng: Wđ = 1/2 m.v²', note: 'Năng lượng do chuyển động mà có.' },
+                                        { label: 'Biến thiên động năng: ΔWđ = ΣA', note: 'Áp dụng tính quãng đường phanh xe.' }
+                                    ]
+                                }
+                            ]
+                        },
+                        quiz: [
+                            { q: 'Một xe tải khối lượng 2000 kg đang chạy với vận tốc 10 m/s thì hãm phanh dừng lại hẳn. Công của lực hãm bằng:', options: ['-100.000 J', '+100.000 J', '-200.000 J', '-20.000 J'], answer: 0, explain: 'A = Wđ2 - Wđ1 = 0 - 1/2 × 2000 × 10² = -100.000 J.' },
+                            { q: 'Hai lực trực đối trong Định luật III Newton có đặc điểm:', options: ['Đặt vào cùng một vật nên triệt tiêu', 'Đặt vào hai vật khác nhau nên không triệt tiêu', 'Có độ lớn khác nhau', 'Chỉ có khi vật đứng yên'], answer: 1, explain: 'Lực và phản lực đặt vào hai vật khác nhau nên không triệt tiêu nhau.' },
+                            { q: 'Mômen quán tính của đĩa tròn đồng chất khối lượng M, bán kính R đối với trục quay vuông góc tại tâm là:', options: ['M.R²', '1/2 M.R²', '2/5 M.R²', '1/12 M.R²'], answer: 1, explain: 'Đĩa tròn đặc đồng chất có I = 1/2 M.R².' },
+                            { q: 'Trong quá trình đẳng nhiệt của khí lý tưởng, Nguyên lý I Nhiệt động lực học (ΔU = Q + A) có dạng:', options: ['ΔU = 0 nên Q = -A', 'Q = 0 nên ΔU = A', 'A = 0 nên ΔU = Q', 'ΔU > 0'], answer: 0, explain: 'Quá trình đẳng nhiệt có ΔT = 0 nên ΔU = 0 ⇒ Q = -A.' },
+                            { q: 'Công thức tính công suất tức thời của một lực F tác dụng lên vật chuyển động với vận tốc v là:', options: ['P = vec(F).vec(v)', 'P = F / v', 'P = 1/2 F.v²', 'P = m.v'], answer: 0, explain: 'Công suất tức thời P = dA/dt = vec(F).vec(v) = F.v.cosα.' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'vl2',
+                code: 'PHYS102',
+                title: 'Vật lý 2 (Điện - Từ - Quang)',
+                category: 'Khoa học Tự nhiên & Kỹ thuật',
+                color: 'cyan',
+                icon: 'zap',
+                sourceShort: 'Giáo trình Lương Duyên Bình Tập 2, Halliday & Resnick, MIT OCW & Khan Academy',
+                cramFormula: 'Coulomb: F = k|q1q2|/(εr²). | Định lý Gauss: Φ_e = Σq/ε₀. | Lực Lorentz: F = |q|vB.sinα. | Faraday: e_c = -dΦ_m/dt.',
+                officialSources: [
+                    { name: 'Giáo trình Vật lý Đại cương Tập 2 - Điện - Từ - Quang (Lương Duyên Bình)', url: 'https://nxbgd.vn', detail: 'NXB Giáo dục Việt Nam • Tài liệu chuẩn học phần Vật lý 2.' },
+                    { name: 'MIT OpenCourseWare (8.02 Electricity and Magnetism) & Halliday', url: 'https://ocw.mit.edu', detail: 'Chuẩn hóa kiến thức điện từ trường, cảm ứng điện từ và quang học sóng.' },
+                    { name: 'Khan Academy Physics & Studocu Vietnam', url: 'https://www.khanacademy.org', detail: 'Hệ thống công thức và bài tập trắc nghiệm Điện - Từ - Quang miễn phí.' }
+                ],
+                lessons: [
+                    {
+                        id: 'vl2-1',
+                        title: 'Bài 1: Điện Trường Tĩnh (Định Lý Gauss) & Cảm Ứng Điện Từ',
+                        tag: 'Chương 1 & 3 • Trọng tâm thi học kỳ',
+                        source: 'Giáo trình Lương Duyên Bình Tập 2 • MIT OCW',
+                        corePoints: [
+                            { title: '1. Định lý Ostrogradski - Gauss cho Điện trường', text: 'Thông lượng điện trường gửi qua một mặt kín bất kỳ bằng tổng đại số các điện tích chứa trong mặt kín đó chia cho ε₀: Φ_e = Σq / ε₀.' },
+                            { title: '2. Định luật Cảm ứng điện từ Faraday & Định luật Lenz', text: 'Suất điện động cảm ứng xuất hiện trong mạch kín tỷ lệ với tốc độ biến thiên từ thông qua mạch: e_c = -dΦ_m / dt. Dấu trừ thể hiện Định luật Lenz (chống lại nguyên nhân sinh ra nó).' }
+                        ],
+                        formulasAndMilestones: [
+                            'Định lý Gauss: Φ_e = Σq / ε₀ (với ε₀ = 8,86 × 10⁻¹² C²/N.m²).',
+                            'Lực từ Lorentz: F = |q|.v.B.sinα (không sinh công vì luôn vuông góc vận tốc v).',
+                            'Cảm ứng điện từ Faraday: e_c = -dΦ_m / dt.'
+                        ],
+                        examTip: 'Lực từ Lorentz luôn vuông góc với vectơ vận tốc v nên lực từ KHÔNG sinh công, chỉ làm thay đổi hướng chuyển động của hạt mang điện.',
+                        mindmap: {
+                            label: 'Điện Từ Trường (Vật Lý 2)',
+                            note: 'Tương tác điện từ, định lý Gauss và hiện tượng cảm ứng điện từ.',
+                            color: 'cyan',
+                            children: [
+                                {
+                                    label: 'Điện trường tĩnh',
+                                    note: 'Trường lực xung quanh các điện tích đứng yên.',
+                                    color: 'indigo',
+                                    children: [
+                                        { label: 'Định luật Coulomb: F = k|q1q2|/εr²', note: 'Lực tương tác giữa hai điện tích điểm.' },
+                                        { label: 'Định lý Gauss: Φ_e = Σq / ε₀', note: 'Tính nhanh cường độ điện trường các vật đối xứng.' }
+                                    ]
+                                },
+                                {
+                                    label: 'Từ trường & Cảm ứng điện từ',
+                                    note: 'Tương tác của dòng điện và hạt mang điện chuyển động.',
+                                    color: 'amber',
+                                    children: [
+                                        { label: 'Lực Lorentz: F = |q|vB.sinα', note: 'Làm hạt mang điện chuyển động tròn đều khi v ⊥ B.' },
+                                        { label: 'Faraday: e_c = -dΦ_m / dt', note: 'Nguyên lý hoạt động của máy phát điện và máy biến áp.' }
+                                    ]
+                                }
+                            ]
+                        },
+                        quiz: [
+                            { q: 'Theo định lý Ostrogradski-Gauss, thông lượng điện trường gửi qua một mặt kín phụ thuộc vào:', options: ['Hình dạng mặt kín', 'Tổng đại số các điện tích nằm bên trong mặt kín', 'Các điện tích bên ngoài mặt kín', 'Vận tốc mặt kín'], answer: 1, explain: 'Φ_e = Σq / ε₀ chỉ phụ thuộc tổng điện tích nằm bên trong mặt kín.' },
+                            { q: 'Dấu trừ trong công thức Faraday (e_c = -dΦ_m/dt) biểu thị nội dung của định luật nào?', options: ['Định luật Coulomb', 'Định luật Lenz', 'Định luật Ohm', 'Định luật Biot-Savart'], answer: 1, explain: 'Dấu trừ thể hiện Định luật Lenz: dòng điện cảm ứng chống lại nguyên nhân sinh ra nó.' },
+                            { q: 'Hạt mang điện q chuyển động song song với đường sức từ trường đều B thì độ lớn lực Lorentz bằng:', options: ['q.v.B', '0', 'q.v / B', 'q.B / v'], answer: 1, explain: 'Góc α = 0° nên sinα = 0 ⇒ F = 0.' },
+                            { q: 'Trong thí nghiệm giao thoa ánh sáng khe Young, khoảng vân i được tính bằng công thức:', options: ['i = λ.D / a', 'i = a.D / λ', 'i = λ.a / D', 'i = 2λ.D / a'], answer: 0, explain: 'Khoảng vân i = λ.D / a.' },
+                            { q: 'Đại lượng nào đặc trưng cho điện trường về phương diện dự trữ năng lượng?', options: ['Cường độ điện trường E', 'Mật độ năng lượng điện trường w_e = 1/2 ε.ε₀.E²', 'Điện thế V', 'Điện tích q'], answer: 1, explain: 'Mật độ năng lượng điện trường w_e = 1/2 ε.ε₀.E².' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'tcc',
+                code: 'MATH101',
+                title: 'Toán cao cấp',
+                category: 'Toán học & Tư duy Logic',
+                color: 'violet',
+                icon: 'sigma',
+                sourceShort: 'Giáo trình Nguyễn Đình Trí, MIT OCW, Paul\'s Online Math Notes & Trắc nghiệm Online',
+                cramFormula: 'Ma trận nghịch đảo: A⁻¹ = (1/det A)*A* (det A ≠ 0). | Kronecker-Capelli: r(A) = r(Ā) = n (Nghiệm duy nhất). | L\'Hospital: lim (f/g) = lim (f\'/g\') với dạng 0/0 hoặc ∞/∞.',
+                officialSources: [
+                    { name: 'Giáo trình Toán học Cao cấp Tập 1 & 2 (Nguyễn Đình Trí)', url: 'https://nxbgd.vn', detail: 'NXB Giáo dục Việt Nam • Giáo trình chuẩn Đại số tuyến tính & Giải tích.' },
+                    { name: 'MIT OpenCourseWare (18.01 Calculus & 18.06 Linear Algebra)', url: 'https://ocw.mit.edu', detail: 'Hệ thống bài giảng giải tích và đại số tuyến tính chuẩn quốc tế.' },
+                    { name: 'Paul\'s Online Math Notes & Kho đề thi trắc nghiệm online 100% miễn phí', url: 'https://tutorial.math.lamar.edu', detail: 'Tổng hợp công thức vi tích phân, ma trận và đề thi thử có lời giải.' }
+                ],
+                lessons: [
+                    {
+                        id: 'tcc-1',
+                        title: 'Bài 1: Ma Trận Nghịch Đảo & Định Lý Kronecker - Capelli',
+                        tag: 'Đại số tuyến tính • Trọng tâm 3-4 điểm thi',
+                        source: 'Giáo trình Nguyễn Đình Trí • MIT OCW (18.06)',
+                        corePoints: [
+                            { title: '1. Điều kiện khả nghịch & Ma trận nghịch đảo A⁻¹', text: 'Ma trận vuông A cấp n có ma trận nghịch đảo A⁻¹ khi và chỉ khi det(A) ≠ 0. Công thức: A⁻¹ = (1 / det(A)) × A*.' },
+                            { title: '2. Biện luận nghiệm Hệ phương trình tuyến tính (Kronecker - Capelli)', text: '• r(A) < r(Ā): Hệ vô nghiệm.\n• r(A) = r(Ā) = n (số ẩn): Hệ có nghiệm duy nhất.\n• r(A) = r(Ā) < n: Hệ có vô số nghiệm phụ thuộc (n - r) tham số tự do.' }
+                        ],
+                        formulasAndMilestones: [
+                            'det(k.A) = kⁿ.det(A) (với A là ma trận vuông cấp n).',
+                            'det(A.B) = det(A).det(B) | det(A⁻¹) = 1 / det(A).',
+                            'Vô cùng bé tương đương (x → 0): sin x ~ tan x ~ ln(1+x) ~ x ; 1 - cos x ~ x²/2.'
+                        ],
+                        examTip: 'Kiểm tra kết quả ma trận nghịch đảo A⁻¹ trong 10 giây: Nhân hàng 1 của A với cột 1 của A⁻¹, nếu ra đúng bằng 1 là tính chính xác!',
+                        mindmap: {
+                            label: 'Đại Số Tuyến Tính & Giải Tích',
+                            note: 'Công cụ ma trận, hệ phương trình tuyến tính và giới hạn giải tích.',
+                            color: 'violet',
+                            children: [
+                                {
+                                    label: 'Ma trận & Định thức',
+                                    note: 'Điều kiện tồn tại nghịch đảo và tính chất định thức.',
+                                    color: 'indigo',
+                                    children: [
+                                        { label: 'Khả nghịch ⇔ det(A) ≠ 0', note: 'A⁻¹ = (1/det A) * A*.' },
+                                        { label: 'det(k.A) = kⁿ.det(A)', note: 'Bẫy hay gặp khi đưa hằng số k ra ngoài định thức cấp n.' }
+                                    ]
+                                },
+                                {
+                                    label: 'Hệ Phương trình Tuyến tính',
+                                    note: 'Định lý Kronecker - Capelli dựa vào hạng ma trận.',
+                                    color: 'emerald',
+                                    children: [
+                                        { label: 'r(A) ≠ r(Ā) → Vô nghiệm', note: 'Hạng ma trận hệ số nhỏ hơn hạng ma trận mở rộng.' },
+                                        { label: 'r(A) = r(Ā) = n → Nghiệm duy nhất', note: 'Số ẩn n bằng hạng ma trận.' },
+                                        { label: 'r(A) = r(Ā) < n → Vô số nghiệm', note: 'Có n - r ẩn tự do.' }
+                                    ]
+                                }
+                            ]
+                        },
+                        quiz: [
+                            { q: 'Điều kiện cần và đủ để ma trận vuông A cấp n có ma trận nghịch đảo A⁻¹ là:', options: ['det(A) = 0', 'det(A) ≠ 0', 'det(A) > 0', 'A đối xứng'], answer: 1, explain: 'Ma trận vuông A khả nghịch khi và chỉ khi det(A) ≠ 0.' },
+                            { q: 'Hệ phương trình tuyến tính 4 ẩn có r(A) = 3 và r(Ā) = 3 thì:', options: ['Vô nghiệm', 'Có nghiệm duy nhất', 'Vô số nghiệm phụ thuộc 1 tham số', 'Vô số nghiệm phụ thuộc 3 tham số'], answer: 2, explain: 'r(A) = r(Ā) = 3 < 4 nên hệ có vô số nghiệm phụ thuộc 4 - 3 = 1 tham số.' },
+                            { q: 'Cho ma trận vuông A cấp 3 có det(A) = 2. Giá trị det(3A) bằng:', options: ['6', '18', '54', '8'], answer: 2, explain: 'det(3A) = 3³ × 2 = 27 × 2 = 54.' },
+                            { q: 'Tính giới hạn L = lim (x→0) [sin(3x) / x]:', options: ['1', '3', '0', '1/3'], answer: 1, explain: 'Khi x → 0, sin(3x) ~ 3x nên L = 3.' },
+                            { q: 'Tính giới hạn L = lim (x→0) [(1 - cos(2x)) / x²]:', options: ['1', '2', '4', '1/2'], answer: 1, explain: '1 - cos(2x) ~ (2x)²/2 = 2x², do đó L = 2.' }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        // ==========================================
+        // 2. STATE MANAGEMENT
+        // ==========================================
+        let currentSubject = null;
+        let currentLesson = null;
+        let currentTab = 'summary';
+        let summaryMode = 'full';
+        let mindmapZoom = 1;
+        let selectedQuizAnswers = {};
+        let quizSubmitted = false;
+
+        // ==========================================
+        // 3. INITIALIZATION & PROFILE SYNC
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            renderSubjectsGrid();
+            renderGlobalCramCards();
+            lucide.createIcons();
+        });
+
+        function updateProfile() {
+            const year = document.getElementById('year-select').value;
+            const school = document.getElementById('school-input').value.trim() || 'UTH - ĐH Giao thông vận tải TP.HCM';
+            document.getElementById('hero-year-badge').textContent = year;
+            document.getElementById('hero-school-badge').textContent = school;
+            document.querySelectorAll('.school-name-text').forEach(el => {
+                el.textContent = school.split('-')[0].trim();
+            });
+            showToast(`EduAI đã đồng bộ đề cương: ${school} (${year})`, 'success');
+        }
+
+        function renderSubjectsGrid() {
+            const grid = document.getElementById('subjects-grid');
+            const colorMap = {
+                indigo: 'bg-indigo-50 text-indigo-600 border-indigo-100',
+                emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+                sky: 'bg-sky-50 text-sky-600 border-sky-100',
+                rose: 'bg-rose-50 text-rose-600 border-rose-100',
+                amber: 'bg-amber-50 text-amber-600 border-amber-100',
+                blue: 'bg-blue-50 text-blue-600 border-blue-100',
+                cyan: 'bg-cyan-50 text-cyan-600 border-cyan-100',
+                violet: 'bg-violet-50 text-violet-600 border-violet-100'
+            };
+
+            grid.innerHTML = subjectsData.map(sub => `
+                <div onclick="openSubject('${sub.id}')" class="group bg-white rounded-2xl border border-slate-200 hover:border-indigo-500 p-5 shadow-2xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-10 h-10 rounded-xl ${colorMap[sub.color]} border flex items-center justify-center group-hover:scale-105 transition-transform">
+                                <i data-lucide="${sub.icon}" class="w-5 h-5"></i>
+                            </div>
+                            <span class="text-[11px] font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">${sub.code}</span>
+                        </div>
+                        <h3 class="font-extrabold text-slate-900 text-base group-hover:text-indigo-600 transition-colors">${sub.title}</h3>
+                        <p class="text-[11px] font-medium text-slate-400 mt-0.5">${sub.category}</p>
+                        <p class="text-xs text-slate-600 mt-2.5 line-clamp-2 leading-relaxed">
+                            Nguồn: <span class="font-semibold text-slate-700">${sub.sourceShort}</span>
+                        </p>
+                    </div>
+
+                    <div class="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                        <span class="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                            <i data-lucide="shield-check" class="w-3 h-3"></i>
+                            <span>Chuẩn nguồn gốc</span>
+                        </span>
+                        <span class="font-bold text-indigo-600 flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                            <span>Vào học</span>
+                            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderGlobalCramCards() {
+            const container = document.getElementById('cram-cards-container');
+            container.innerHTML = subjectsData.map(sub => `
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 text-[11px] font-mono font-bold bg-slate-900 text-white rounded">${sub.code}</span>
+                            <h3 class="font-extrabold text-slate-900 text-base">${sub.title}</h3>
+                        </div>
+                        <button onclick="openSubject('${sub.id}')" class="text-xs font-bold text-indigo-600 hover:underline flex items-center gap-1">
+                            <span>Mở bài học</span>
+                            <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                    <div class="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs text-slate-800 font-medium leading-relaxed">
+                        ${sub.cramFormula.split('|').map(item => `<div class="py-1 border-b border-amber-200/40 last:border-none">⚡ ${item.trim()}</div>`).join('')}
+                    </div>
+                    <div class="text-[11px] text-slate-500 flex items-center justify-between">
+                        <span class="truncate max-w-[70%]">Nguồn: ${sub.sourceShort}</span>
+                        <span class="text-emerald-700 font-bold shrink-0">✓ Chuẩn giáo trình</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ==========================================
+        // 4. NAVIGATION & WORKSPACE
+        // ==========================================
+        function goHome() {
+            document.getElementById('dashboard-view').classList.remove('hidden');
+            document.getElementById('workspace-view').classList.add('hidden');
+            document.getElementById('cram-view').classList.add('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function toggleGlobalCramView() {
+            const cramView = document.getElementById('cram-view');
+            if (cramView.classList.contains('hidden')) {
+                document.getElementById('dashboard-view').classList.add('hidden');
+                document.getElementById('workspace-view').classList.add('hidden');
+                cramView.classList.remove('hidden');
+                showToast('Đã bật Chế độ Ôn thi cấp tốc 24h toàn bộ 8 môn!', 'info');
+            } else {
+                goHome();
+            }
+            lucide.createIcons();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function openSubject(subjectId, lessonId = null) {
+            currentSubject = subjectsData.find(s => s.id === subjectId);
+            if (!currentSubject) return;
+
+            document.getElementById('dashboard-view').classList.add('hidden');
+            document.getElementById('cram-view').classList.add('hidden');
+            document.getElementById('workspace-view').classList.remove('hidden');
+
+            document.getElementById('ws-subject-code').textContent = currentSubject.code;
+            document.getElementById('ws-subject-title').textContent = currentSubject.title;
+            document.getElementById('ws-lesson-count').textContent = `${currentSubject.lessons.length} bài`;
+            document.getElementById('ws-source-badge').textContent = currentSubject.sourceShort;
+
+            const targetLesson = lessonId
+                ? currentSubject.lessons.find(l => l.id === lessonId) || currentSubject.lessons[0]
+                : currentSubject.lessons[0];
+
+            selectLesson(targetLesson.id);
+            renderOfficialSourcesPanel();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function selectLesson(lessonId) {
+            currentLesson = currentSubject.lessons.find(l => l.id === lessonId);
+            if (!currentLesson) return;
+
+            const listEl = document.getElementById('ws-lesson-list');
+            listEl.innerHTML = currentSubject.lessons.map((lesson, idx) => {
+                const active = lesson.id === currentLesson.id;
+                return `
+                    <button onclick="selectLesson('${lesson.id}')" class="w-full text-left p-3 rounded-xl border text-xs transition-all ${active ? 'bg-indigo-600 text-white border-indigo-600 font-bold shadow-xs' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200/80 font-medium'}">
+                        <div class="text-[10px] opacity-80 mb-0.5">Chủ đề ${idx + 1}</div>
+                        <div class="leading-snug">${lesson.title}</div>
+                    </button>
+                `;
+            }).join('');
+
+            document.getElementById('lesson-tag').textContent = currentLesson.tag;
+            document.getElementById('lesson-source-pill').textContent = `Nguồn: ${currentLesson.source}`;
+            document.getElementById('lesson-title').textContent = currentLesson.title;
+
+            summaryMode = 'full';
+            renderSummaryTab();
+            renderMindmapTab();
+            resetQuiz();
+            switchTab('summary');
+            lucide.createIcons();
+        }
+
+        function switchTab(tabName) {
+            currentTab = tabName;
+            const tabs = ['summary', 'mindmap', 'sources-quiz'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`);
+                const content = document.getElementById(`tab-content-${t}`);
+                if (t === tabName) {
+                    btn.className = 'py-3 px-2 text-center border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50/40 flex items-center justify-center gap-1.5 transition-all font-extrabold';
+                    content.classList.remove('hidden');
+                } else {
+                    btn.className = 'py-3 px-2 text-center border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center justify-center gap-1.5 transition-all font-bold';
+                    content.classList.add('hidden');
+                }
+            });
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 5. TAB 1: SUMMARY & LESSON 24H CRAM MODE
+        // ==========================================
+        function setLessonSummaryMode(mode) {
+            summaryMode = mode;
+            const fullBtn = document.getElementById('mode-full-btn');
+            const cramBtn = document.getElementById('mode-cram-btn');
+            if (mode === 'full') {
+                fullBtn.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-bold bg-white text-indigo-700 shadow-2xs transition-all';
+                cramBtn.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all';
+            } else {
+                cramBtn.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-bold bg-amber-500 text-white shadow-2xs transition-all';
+                fullBtn.className = 'flex-1 py-1.5 px-3 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all';
+            }
+            renderSummaryTab();
+            lucide.createIcons();
+        }
+
+        function renderSummaryTab() {
+            const container = document.getElementById('summary-body-container');
+            if (summaryMode === 'cram') {
+                container.innerHTML = `
+                    <div class="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-3">
+                        <div class="flex items-center gap-2 text-amber-900 font-extrabold text-xs uppercase tracking-wider">
+                            <i data-lucide="zap" class="w-4 h-4 text-amber-600"></i>
+                            <span>Chế độ Ôn cấp tốc 24h — Ghi nhớ cốt lõi trong 1 trang</span>
+                        </div>
+                        <ul class="space-y-2 text-xs text-slate-800 font-medium">
+                            ${currentLesson.formulasAndMilestones.map(f => `
+                                <li class="p-2.5 bg-white rounded-xl border border-amber-200/70 flex items-start gap-2">
+                                    <span class="text-amber-600 font-extrabold">⚡</span>
+                                    <span>${f}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                        <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-950">
+                            <strong class="font-extrabold">⚠️ Bẫy đề thi hay gặp nhất:</strong> ${currentLesson.examTip}
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="space-y-4">
+                    ${currentLesson.corePoints.map(pt => `
+                        <div class="p-4 rounded-xl bg-slate-50/90 border border-slate-200/80 space-y-1.5">
+                            <h4 class="font-extrabold text-slate-900 text-sm">${pt.title}</h4>
+                            <p class="text-xs sm:text-sm text-slate-700 whitespace-pre-line leading-relaxed">${pt.text}</p>
+                        </div>
+                    `).join('')}
+
+                    <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3">
+                        <i data-lucide="lightbulb" class="w-5 h-5 text-amber-600 shrink-0 mt-0.5"></i>
+                        <div class="text-xs text-amber-950 leading-relaxed">
+                            <strong class="font-extrabold uppercase tracking-wide block mb-0.5">Mẹo trúng đề & Tránh bẫy thi:</strong>
+                            ${currentLesson.examTip}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==========================================
+        // 6. TAB 2: COLLAPSIBLE MINDMAP + REAL PNG EXPORT
+        // ==========================================
+        function renderMindmapTab() {
+            mindmapZoom = 1;
+            document.getElementById('mindmap-zoom-label').textContent = '100%';
+            const canvas = document.getElementById('mindmap-canvas');
+            canvas.style.transform = 'scale(1)';
+
+            const root = currentLesson.mindmap;
+            document.getElementById('mindmap-node-detail-text').textContent = root.note || 'Bấm vào từng nhánh để đóng/mở và xem chi tiết.';
+            canvas.innerHTML = buildMindmapHTML(root, 0);
+            lucide.createIcons();
+        }
+
+        function buildMindmapHTML(node, level) {
+            const hasChildren = node.children && node.children.length > 0;
+            const nodeId = 'mm-' + Math.random().toString(36).substr(2, 9);
+            const safeNote = (node.note || node.label).replace(/'/g, "\\'");
+
+            const badgeColors = {
+                indigo: 'bg-indigo-600 text-white border-indigo-700',
+                emerald: 'bg-emerald-600 text-white border-emerald-700',
+                amber: 'bg-amber-500 text-white border-amber-600',
+                rose: 'bg-rose-600 text-white border-rose-700',
+                sky: 'bg-sky-600 text-white border-sky-700',
+                blue: 'bg-blue-600 text-white border-blue-700',
+                cyan: 'bg-cyan-600 text-white border-cyan-700',
+                violet: 'bg-violet-600 text-white border-violet-700'
+            };
+
+            if (level === 0) {
+                return `
+                    <div class="space-y-3">
+                        <button onclick="selectMindmapNode('${safeNote}')" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-extrabold text-sm shadow-xs border ${badgeColors[node.color] || badgeColors.indigo}">
+                            <i data-lucide="git-merge" class="w-4 h-4"></i>
+                            <span>${node.label}</span>
+                        </button>
+                        ${hasChildren ? `<div class="mm-branch space-y-3 pt-1">${node.children.map(c => buildMindmapHTML(c, level + 1)).join('')}</div>` : ''}
+                    </div>
+                `;
+            }
+
+            if (level === 1) {
+                return `
+                    <div class="mm-item space-y-2">
+                        <button onclick="toggleMindmapNode('${nodeId}', '${safeNote}')" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold text-xs shadow-2xs border transition-all hover:opacity-95 ${badgeColors[node.color] || badgeColors.emerald}">
+                            <i id="icon-${nodeId}" data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                            <span>${node.label}</span>
+                        </button>
+                        ${hasChildren ? `<div id="${nodeId}" class="mindmap-children mm-branch space-y-2 pt-1">${node.children.map(c => buildMindmapHTML(c, level + 1)).join('')}</div>` : ''}
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="mm-item">
+                    <button onclick="selectMindmapNode('${safeNote}')" class="text-left inline-block px-3 py-2 rounded-xl bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 text-xs font-semibold text-slate-800 shadow-2xs transition-colors">
+                        ${node.label}
+                    </button>
+                </div>
+            `;
+        }
+
+        function selectMindmapNode(noteText) {
+            document.getElementById('mindmap-node-detail-text').textContent = noteText;
+        }
+
+        function toggleMindmapNode(nodeId, noteText) {
+            selectMindmapNode(noteText);
+            const el = document.getElementById(nodeId);
+            const icon = document.getElementById(`icon-${nodeId}`);
+            if (!el) return;
+            el.classList.toggle('hidden');
+            if (icon) {
+                icon.setAttribute('data-lucide', el.classList.contains('hidden') ? 'chevron-right' : 'chevron-down');
+                lucide.createIcons();
+            }
+        }
+
+        function expandAllMindmap(expand) {
+            document.querySelectorAll('.mindmap-children').forEach(el => {
+                if (expand) el.classList.remove('hidden');
+                else el.classList.add('hidden');
+            });
+            showToast(expand ? 'Đã mở rộng toàn bộ nhánh Mindmap' : 'Đã thu gọn các nhánh con', 'info');
+        }
+
+        function zoomMindmap(delta) {
+            mindmapZoom = Math.min(1.4, Math.max(0.7, +(mindmapZoom + delta).toFixed(1)));
+            document.getElementById('mindmap-canvas').style.transform = `scale(${mindmapZoom})`;
+            document.getElementById('mindmap-zoom-label').textContent = `${Math.round(mindmapZoom * 100)}%`;
+        }
+
+        // Export real PNG image from HTML5 Canvas
+        function downloadMindmapPNG() {
+            const root = currentLesson.mindmap;
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            const lines = [];
+            lines.push({ text: `EduAI • SƠ ĐỒ TƯ DUY MINDMAP CHUẨN HÓA`, type: 'header' });
+            lines.push({ text: `${currentSubject.title.toUpperCase()} — ${currentLesson.title}`, type: 'sub' });
+            lines.push({ text: `● ${root.label}`, type: 'root' });
+            (root.children || []).forEach(branch => {
+                lines.push({ text: `   ├── [${branch.label}]`, type: 'branch' });
+                (branch.children || []).forEach(leaf => {
+                    lines.push({ text: `   │      └── ${leaf.label}`, type: 'leaf' });
+                });
+            });
+
+            canvas.width = 1100;
+            canvas.height = Math.max(520, 140 + lines.length * 42);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#4f46e5';
+            ctx.fillRect(0, 0, canvas.width, 12);
+
+            let y = 55;
+            lines.forEach(item => {
+                if (item.type === 'header') {
+                    ctx.font = 'bold 16px sans-serif';
+                    ctx.fillStyle = '#4f46e5';
+                } else if (item.type === 'sub') {
+                    ctx.font = 'bold 20px sans-serif';
+                    ctx.fillStyle = '#0f172a';
+                } else if (item.type === 'root') {
+                    ctx.font = 'bold 22px sans-serif';
+                    ctx.fillStyle = '#1e1b4b';
+                    y += 10;
+                } else if (item.type === 'branch') {
+                    ctx.font = 'bold 18px sans-serif';
+                    ctx.fillStyle = '#059669';
+                    y += 6;
+                } else {
+                    ctx.font = '16px sans-serif';
+                    ctx.fillStyle = '#334155';
+                }
+                ctx.fillText(item.text, 44, y);
+                y += 38;
+            });
+
+            ctx.font = '13px sans-serif';
+            ctx.fillStyle = '#64748b';
+            ctx.fillText(`Nguồn đối chiếu: ${currentLesson.source} | EduAI Platform`, 44, canvas.height - 24);
+
+            const link = document.createElement('a');
+            link.download = `EduAI_Mindmap_${currentLesson.id}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            showToast('Đã tải xuống ảnh sơ đồ Mindmap (PNG) để học offline!', 'success');
+        }
+
+        // ==========================================
+        // 7. TAB 3: OFFICIAL SOURCES & MINI-QUIZ
+        // ==========================================
+        function renderOfficialSourcesPanel() {
+            const sources = currentSubject.officialSources;
+            document.getElementById('official-sources-list').innerHTML = sources.map((src, idx) => `
+                <div class="p-3 rounded-xl border border-slate-200/90 bg-white flex items-start justify-between gap-2.5">
+                    <div class="flex items-start gap-2.5">
+                        <div class="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-700 font-extrabold text-[11px] flex items-center justify-center shrink-0 mt-0.5">
+                            ${idx + 1}
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-xs">${src.name}</h4>
+                            <p class="text-[11px] text-slate-500 mt-0.5">${src.detail}</p>
+                        </div>
+                    </div>
+                    <a href="${src.url}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 rounded-lg text-[10px] font-bold shrink-0 flex items-center gap-1 transition-colors">
+                        <span>Nguồn</span>
+                        <i data-lucide="external-link" class="w-3 h-3"></i>
+                    </a>
+                </div>
+            `).join('');
+        }
+
+        function resetQuiz() {
+            selectedQuizAnswers = {};
+            quizSubmitted = false;
+            document.getElementById('quiz-score-badge').textContent = 'Chưa nộp bài';
+            document.getElementById('quiz-score-badge').className = 'px-3 py-1 bg-white text-indigo-700 font-extrabold text-xs rounded-lg border border-indigo-200';
+            renderQuizList();
+        }
+
+        function renderQuizList() {
+            const container = document.getElementById('quiz-questions-list');
+            container.innerHTML = currentLesson.quiz.map((item, qIdx) => `
+                <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2.5">
+                    <p class="font-bold text-slate-900 text-xs sm:text-sm">Câu ${qIdx + 1}: ${item.q}</p>
+                    <div class="space-y-1.5">
+                        ${item.options.map((opt, optIdx) => {
+                            const isSelected = selectedQuizAnswers[qIdx] === optIdx;
+                            let btnStyle = 'bg-white border-slate-200 text-slate-700 hover:border-indigo-400';
+                            if (quizSubmitted) {
+                                if (optIdx === item.answer) {
+                                    btnStyle = 'bg-emerald-50 border-emerald-500 text-emerald-900 font-bold';
+                                } else if (isSelected && optIdx !== item.answer) {
+                                    btnStyle = 'bg-rose-50 border-rose-500 text-rose-900 font-bold';
+                                }
+                            } else if (isSelected) {
+                                btnStyle = 'bg-indigo-50 border-indigo-600 text-indigo-900 font-bold';
+                            }
+
+                            return `
+                                <button onclick="selectQuizOption(${qIdx}, ${optIdx})" class="w-full text-left px-3 py-2 rounded-lg border text-xs transition-all flex items-center gap-2 ${btnStyle}">
+                                    <span class="w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-bold shrink-0 ${isSelected ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300'}">
+                                        ${String.fromCharCode(65 + optIdx)}
+                                    </span>
+                                    <span>${opt}</span>
+                                </button>
+                            `;
+                        }).join('')}
+                    </div>
+                    ${quizSubmitted ? `
+                        <div class="p-2.5 rounded-lg bg-indigo-50/80 border border-indigo-100 text-[11px] text-indigo-950">
+                            <strong>Giải thích:</strong> ${item.explain}
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        function selectQuizOption(qIdx, optIdx) {
+            if (quizSubmitted) return;
+            selectedQuizAnswers[qIdx] = optIdx;
+            renderQuizList();
+        }
+
+        function submitQuiz() {
+            const total = currentLesson.quiz.length;
+            if (Object.keys(selectedQuizAnswers).length < total) {
+                showToast('Bạn hãy chọn đầy đủ đáp án cho cả 5 câu hỏi nhé!', 'warning');
+                return;
+            }
+            quizSubmitted = true;
+            let correct = 0;
+            currentLesson.quiz.forEach((item, idx) => {
+                if (selectedQuizAnswers[idx] === item.answer) correct++;
+            });
+
+            const badge = document.getElementById('quiz-score-badge');
+            badge.textContent = `Đúng ${correct}/${total} câu`;
+            badge.className = correct === total
+                ? 'px-3 py-1 bg-emerald-600 text-white font-extrabold text-xs rounded-lg'
+                : 'px-3 py-1 bg-amber-500 text-white font-extrabold text-xs rounded-lg';
+
+            renderQuizList();
+            showToast(`Hoàn thành! Bạn trả lời đúng ${correct}/${total} câu.`, 'success');
+        }
+
+        // ==========================================
+        // 8. SEARCH, PDF EXPORT & REPORT MODAL
+        // ==========================================
+        function handleSearch(query) {
+            const resultsBox = document.getElementById('search-results');
+            const q = query.trim().toLowerCase();
+            if (!q) {
+                resultsBox.classList.add('hidden');
+                return;
+            }
+
+            const matches = [];
+            subjectsData.forEach(sub => {
+                if (sub.title.toLowerCase().includes(q) || sub.code.toLowerCase().includes(q) || sub.cramFormula.toLowerCase().includes(q)) {
+                    matches.push({
+                        type: 'Môn học / Công thức',
+                        title: `${sub.title} (${sub.code})`,
+                        subtitle: sub.cramFormula.slice(0, 75) + '...',
+                        subjectId: sub.id,
+                        lessonId: sub.lessons[0].id
+                    });
+                }
+                sub.lessons.forEach(les => {
+                    if (les.title.toLowerCase().includes(q) || les.corePoints.some(p => p.text.toLowerCase().includes(q))) {
+                        matches.push({
+                            type: sub.title,
+                            title: les.title,
+                            subtitle: les.source,
+                            subjectId: sub.id,
+                            lessonId: les.id
+                        });
+                    }
+                });
+            });
+
+            if (matches.length === 0) {
+                resultsBox.innerHTML = `<div class="p-3.5 text-xs text-slate-500 text-center">Không tìm thấy kết quả phù hợp cho "${escapeHTML(query)}"</div>`;
+            } else {
+                resultsBox.innerHTML = matches.slice(0, 6).map(m => `
+                    <button onclick="selectSearchResult('${m.subjectId}', '${m.lessonId}')" class="w-full text-left p-3 hover:bg-indigo-50 transition-colors block">
+                        <span class="text-[10px] font-bold text-indigo-600 uppercase">${m.type}</span>
+                        <div class="text-xs font-bold text-slate-900">${m.title}</div>
+                        <div class="text-[11px] text-slate-500 truncate">${m.subtitle}</div>
+                    </button>
+                `).join('');
+            }
+            resultsBox.classList.remove('hidden');
+        }
+
+        function selectSearchResult(subjectId, lessonId) {
+            document.getElementById('search-results').classList.add('hidden');
+            document.getElementById('global-search').value = '';
+            openSubject(subjectId, lessonId);
+        }
+
+        function exportLessonPDF() {
+            switchTab('summary');
+            showToast('Đang mở trình xuất PDF / In tài liệu học offline...', 'info');
+            setTimeout(() => window.print(), 350);
+        }
+
+        function openReportModal() {
+            document.getElementById('report-modal').classList.remove('hidden');
+        }
+
+        function closeReportModal() {
+            document.getElementById('report-modal').classList.add('hidden');
+        }
+
+        function submitReport() {
+            const desc = document.getElementById('report-desc').value.trim();
+            if (!desc) {
+                showToast('Vui lòng nhập nội dung báo lỗi hoặc nguồn cần cập nhật!', 'warning');
+                return;
+            }
+            document.getElementById('report-desc').value = '';
+            closeReportModal();
+            showToast('Đã ghi nhận đề xuất! Hệ thống EduAI sẽ đối chiếu nguồn gốc để cập nhật.', 'success');
+        }
+
+        // ==========================================
+        // 9. DIRECT AI TUTOR (GEMINI / CLAUDE / GROK PERSONAS)
+        // ==========================================
+        function sendQuickPrompt(text) {
+            document.getElementById('ai-chat-input').value = text;
+            handleChatSubmit(new Event('submit'));
+        }
+
+        async function handleChatSubmit(e) {
+            e.preventDefault();
+            const inputEl = document.getElementById('ai-chat-input');
+            const userText = inputEl.value.trim();
+            if (!userText) return;
+
+            const engine = document.getElementById('ai-engine-select').value;
+            appendChatMessage('user', userText);
+            inputEl.value = '';
+
+            const loadingId = appendLoadingMessage(engine);
+
+            const school = document.getElementById('school-input').value || 'UTH';
+            const lessonContext = currentLesson
+                ? `Môn học: ${currentSubject.title} (${currentSubject.code}). Bài học: ${currentLesson.title}. Kiến thức trọng tâm: ${currentLesson.corePoints.map(p => p.title + ': ' + p.text).join(' | ')}. Mẹo thi: ${currentLesson.examTip}`
+                : 'Người dùng đang xem danh sách 8 môn đại cương.';
+
+            const personaInstruction = engine.includes('Claude')
+                ? 'Trả lời theo phong cách Claude 3.7 Sonnet: sư phạm, mạch lạc, phân tích có chiều sâu và cấu trúc rõ ràng.'
+                : engine.includes('Grok')
+                ? 'Trả lời theo phong cách Grok 3: thông minh, sắc bén, súc tích, đi thẳng vào trọng tâm kèm ví dụ đời thường dễ nhớ.'
+                : 'Trả lời theo phong cách Gemini 2.5: thân thiện, chuẩn xác khoa học, bám sát giáo trình đại học Việt Nam.';
+
+            const systemPrompt = `Bạn là Trợ lý Gia sư AI của nền tảng "EduAI" dành cho sinh viên năm 1-2 (đặc biệt tại ${school}). ${personaInstruction} Trả lời bằng tiếng Việt rõ ràng, dùng gạch đầu dòng và in đậm ý chính. Bối cảnh bài học hiện tại: ${lessonContext}`;
+
+            try {
+                const reply = await callGeminiWithRetry(userText, systemPrompt);
+                removeMessage(loadingId);
+                appendChatMessage('ai', reply, engine);
+            } catch (err) {
+                removeMessage(loadingId);
+                const fallbackReply = currentLesson
+                    ? `Dựa trên giáo trình chuẩn của bài **${currentLesson.title}**, bạn hãy nắm chắc công thức cốt lõi: **${currentLesson.formulasAndMilestones[0]}**. Lưu ý bẫy thi: ${currentLesson.examTip}`
+                    : 'Kết nối máy chủ AI đang tạm gián đoạn. Bạn có thể xem phần Tóm tắt 5 trang hoặc Chế độ Ôn cấp tốc 24h trên EduAI để ôn tập ngay nhé!';
+                appendChatMessage('ai', fallbackReply, engine);
+            }
+        }
+
+        async function callGeminiWithRetry(userQuery, systemInstructionText) {
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: {
+                    parts: [{ text: systemInstructionText }]
+                }
+            };
+
+            const delays = [1000, 2000, 4000];
+            for (let attempt = 0; attempt <= delays.length; attempt++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+                    const result = await response.json();
+                    const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (text) return text;
+                    throw new Error('Empty response');
+                } catch (error) {
+                    if (attempt === delays.length) throw error;
+                    await new Promise(res => setTimeout(res, delays[attempt]));
+                }
+            }
+        }
+
+        function appendChatMessage(sender, text, engine = 'Gemini 2.5') {
+            const container = document.getElementById('ai-chat-messages');
+            const wrapper = document.createElement('div');
+
+            if (sender === 'user') {
+                wrapper.className = 'flex items-start justify-end gap-2';
+                wrapper.innerHTML = `
+                    <div class="bg-indigo-600 text-white rounded-2xl rounded-tr-none px-3.5 py-2.5 max-w-[85%] shadow-2xs">
+                        ${escapeHTML(text)}
+                    </div>
+                `;
+            } else {
+                const formatted = formatMarkdownSimple(text);
+                wrapper.className = 'flex items-start gap-2.5';
+                wrapper.innerHTML = `
+                    <div class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 font-extrabold text-[10px]">
+                        AI
+                    </div>
+                    <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-none p-3 text-slate-700 max-w-[88%] shadow-2xs space-y-1.5">
+                        <div class="text-[10px] font-bold text-indigo-600 uppercase">${engine}</div>
+                        <div>${formatted}</div>
+                    </div>
+                `;
+            }
+
+            container.appendChild(wrapper);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function appendLoadingMessage(engine) {
+            const id = 'loading-' + Date.now();
+            const container = document.getElementById('ai-chat-messages');
+            const wrapper = document.createElement('div');
+            wrapper.id = id;
+            wrapper.className = 'flex items-start gap-2.5';
+            wrapper.innerHTML = `
+                <div class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 font-bold text-[10px]">AI</div>
+                <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-none px-3.5 py-2.5 text-slate-500 text-xs flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
+                    <span>${engine} đang phân tích câu hỏi...</span>
+                </div>
+            `;
+            container.appendChild(wrapper);
+            container.scrollTop = container.scrollHeight;
+            return id;
+        }
+
+        function removeMessage(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        function formatMarkdownSimple(str) {
+            let safe = escapeHTML(str);
+            safe = safe.replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-900 font-bold">$1</strong>');
+            safe = safe.replace(/\n/g, '<br>');
+            return safe;
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>"']/g, m => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[m]));
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const colors = {
+                success: 'bg-emerald-900 text-white border-emerald-700',
+                warning: 'bg-amber-900 text-white border-amber-700',
+                info: 'bg-slate-900 text-white border-slate-700'
+            };
+            toast.className = `px-4 py-2.5 rounded-xl border text-xs font-semibold shadow-lg transition-all duration-300 ${colors[type] || colors.info}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
